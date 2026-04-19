@@ -1,0 +1,153 @@
+<div class="mx-auto max-w-3xl px-4 py-12">
+  <h1 class="text-3xl font-bold tracking-tight text-slate-900">Terms of Use</h1>
+  <p class="mt-2 text-sm text-slate-500">Last updated: April 19, 2026</p>
+
+  <div class="prose prose-slate mt-8 max-w-none text-sm leading-relaxed">
+    <h2>1. Acceptance of Terms</h2>
+    <p>
+      By accessing or using Pluma ("the Service"), you agree to be bound by these Terms of Use
+      and our <a routerLink="/privacy">Privacy Policy</a>. If you do not agree, do not use the
+      Service. These terms apply to all users, including patients, researchers, and administrators.
+    </p>
+
+    <h2>2. Description of Service</h2>
+    <p>
+      Pluma is a HIPAA-compliant intake application that collects self-reported environmental,
+      occupational, and symptom data associated with Parkinson's disease. The Service packages
+      responses into structured records for downstream clinical or research analysis alongside
+      multi-omics data.
+    </p>
+    <p>
+      <strong>The Service does not diagnose any condition, compute a risk score, or provide
+      medical advice.</strong> It is not a substitute for evaluation by a qualified clinician.
+    </p>
+
+    <h2>3. HIPAA Compliance</h2>
+    <p>
+      Pluma is designed and operated in accordance with the Health Insurance Portability and
+      Accountability Act of 1996 (HIPAA) and its implementing regulations, including the Privacy
+      Rule (45 CFR Part 160 and Subparts A and E of Part 164) and the Security Rule (45 CFR Part
+      160 and Subparts A and C of Part 164).
+    </p>
+    <ul>
+      <li>
+        <strong>Protected Health Information (PHI)</strong> — all intake responses, ZIP codes,
+        and associated metadata are treated as PHI. These fields are encrypted at rest using
+        AES-256-GCM and are accessible only to authorized users through role-based access
+        controls.
+      </li>
+      <li>
+        <strong>Minimum Necessary Standard</strong> — researchers may access only the records of
+        patients who have explicitly granted them permission. The root administrator has full
+        access for system administration purposes as permitted under HIPAA's administrative
+        provisions.
+      </li>
+      <li>
+        <strong>Audit Controls (§ 164.312(b))</strong> — every access to, modification of, or
+        deletion of PHI is recorded in an immutable audit log that captures the actor, timestamp,
+        IP address, user agent, target resource, and outcome.
+      </li>
+      <li>
+        <strong>Access Controls (§ 164.312(a))</strong> — the Service enforces unique user
+        identification, automatic session expiration, multi-factor authentication (TOTP and
+        WebAuthn/passkeys), and emergency access procedures.
+      </li>
+      <li>
+        <strong>Transmission Security (§ 164.312(e))</strong> — all data in transit is protected
+        via TLS. The Service enforces HTTPS in production with HSTS preloading and strict
+        Content Security Policy headers.
+      </li>
+      <li>
+        <strong>Business Associate Agreements</strong> — if you are a covered entity or business
+        associate using this Service, a BAA is required before any PHI is processed. Contact the
+        Service operator to execute a BAA.
+      </li>
+    </ul>
+
+    <h2>4. User Accounts and Roles</h2>
+    <p>You are responsible for maintaining the confidentiality of your account credentials. The
+      Service supports three roles:</p>
+    <ul>
+      <li><strong>Patient</strong> — may submit, view, edit, and delete their own records; may
+        grant or revoke researcher access to their data; may delete their own account (which
+        cascades to all associated records).</li>
+      <li><strong>Researcher</strong> — may view and download records only from patients who have
+        granted explicit access; may not modify patient records.</li>
+      <li><strong>Root Administrator</strong> — may manage all users and records for system
+        administration; responsible for confirming researcher accounts and maintaining BAAs.</li>
+    </ul>
+
+    <h2>5. Patient Data Ownership</h2>
+    <p>
+      You retain ownership of all data you submit through the Service. Pluma acts as a data
+      processor on your behalf. You may:
+    </p>
+    <ul>
+      <li>Download a copy of your records at any time.</li>
+      <li>Edit or delete any record you have submitted.</li>
+      <li>Grant or revoke access to specific researchers at your sole discretion.</li>
+      <li>Delete your account entirely, which permanently removes all associated records.</li>
+    </ul>
+
+    <h2>6. Prohibited Uses</h2>
+    <p>You agree not to:</p>
+    <ul>
+      <li>Use the Service for any unlawful purpose or in violation of HIPAA.</li>
+      <li>Attempt to access records belonging to other users without explicit authorization.</li>
+      <li>Circumvent, disable, or interfere with security features of the Service.</li>
+      <li>Use the Service to re-identify de-identified data or to conduct unauthorized research.</li>
+      <li>Share account credentials or authentication tokens with any third party.</li>
+    </ul>
+
+    <h2>7. Data Security Incident Notification</h2>
+    <p>
+      In the event of a breach of unsecured PHI, the Service operator will notify affected
+      individuals and the U.S. Department of Health and Human Services in accordance with the
+      HIPAA Breach Notification Rule (45 CFR §§ 164.400–164.414). Notification will occur without
+      unreasonable delay and no later than 60 calendar days from discovery.
+    </p>
+
+    <h2>8. Disclaimer of Warranties</h2>
+    <p>
+      THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EITHER
+      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY,
+      FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. THE SERVICE DOES NOT PROVIDE MEDICAL
+      DIAGNOSES, TREATMENT RECOMMENDATIONS, OR RISK ASSESSMENTS.
+    </p>
+
+    <h2>9. Limitation of Liability</h2>
+    <p>
+      TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SERVICE OPERATOR SHALL NOT BE LIABLE
+      FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING FROM YOUR
+      USE OF THE SERVICE. THE SERVICE OPERATOR'S TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT PAID
+      BY YOU, IF ANY, FOR ACCESS TO THE SERVICE.
+    </p>
+
+    <h2>10. Modifications</h2>
+    <p>
+      We reserve the right to modify these Terms at any time. Material changes will be posted on
+      this page with an updated effective date. Continued use of the Service after changes are
+      posted constitutes acceptance of the revised Terms.
+    </p>
+
+    <h2>11. Governing Law</h2>
+    <p>
+      These Terms are governed by and construed in accordance with federal law, including HIPAA,
+      and the laws of the state in which the Service operator is domiciled, without regard to
+      conflict of law principles.
+    </p>
+
+    <h2>12. Contact</h2>
+    <p>
+      Questions about these Terms, HIPAA compliance, or BAA execution should be directed to the
+      Service operator's designated Privacy Officer at the contact information provided during
+      account registration or system deployment.
+    </p>
+  </div>
+
+  <div class="mt-8 border-t border-slate-200 pt-6 text-sm text-slate-500">
+    <a routerLink="/privacy" class="font-medium text-brand-700 hover:underline">Privacy Policy</a>
+    <span class="mx-2">·</span>
+    <a routerLink="/" class="font-medium text-brand-700 hover:underline">Back to home</a>
+  </div>
+</div>

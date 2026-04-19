@@ -1,0 +1,188 @@
+<div class="mx-auto max-w-3xl px-4 py-12">
+  <h1 class="text-3xl font-bold tracking-tight text-slate-900">Privacy Policy</h1>
+  <p class="mt-2 text-sm text-slate-500">Last updated: April 19, 2026</p>
+
+  <div class="prose prose-slate mt-8 max-w-none text-sm leading-relaxed">
+    <h2>1. Overview</h2>
+    <p>
+      This Privacy Policy describes how Pluma ("the Service") collects, uses, stores, and
+      protects your information. The Service is designed to comply with the Health Insurance
+      Portability and Accountability Act of 1996 (HIPAA), including the Privacy Rule and the
+      Security Rule. We are committed to safeguarding your Protected Health Information (PHI).
+    </p>
+
+    <h2>2. Information We Collect</h2>
+    <h3>2.1 Account Information</h3>
+    <ul>
+      <li><strong>Email address</strong> — used for account identification, login, email
+        verification, and password-reset communications.</li>
+      <li><strong>Password</strong> — stored only as an argon2id hash. We never store or
+        transmit your plaintext password.</li>
+      <li><strong>Authentication credentials</strong> — TOTP secrets (encrypted at rest),
+        recovery passcode hashes, and WebAuthn public keys for passkey-based authentication.</li>
+    </ul>
+
+    <h3>2.2 Intake Data (Protected Health Information)</h3>
+    <p>When you complete the intake form, we collect self-reported data including:</p>
+    <ul>
+      <li>Demographic information (age band, sex at birth)</li>
+      <li>Environmental and occupational exposure history</li>
+      <li>Medical and lifestyle history</li>
+      <li>Motor and non-motor symptom assessments</li>
+      <li>Free-text narrative responses</li>
+      <li>ZIP code (optional; used for geo-correlation with environmental registries)</li>
+    </ul>
+    <p>
+      <strong>Direct identifiers (name, email address) are stripped client-side</strong> before
+      your intake data is transmitted to the server. The server rejects any submission that
+      contains direct PII keys.
+    </p>
+
+    <h3>2.3 Audit and Security Data</h3>
+    <ul>
+      <li>IP address and user agent for each authenticated request</li>
+      <li>Timestamps and outcomes of login attempts, data access events, and administrative
+        actions</li>
+      <li>These records are required by HIPAA § 164.312(b) for audit control purposes</li>
+    </ul>
+
+    <h2>3. How We Protect Your Data</h2>
+    <h3>3.1 Encryption at Rest</h3>
+    <p>
+      All PHI fields — including your intake responses, ZIP code, and TOTP authentication
+      secrets — are encrypted using AES-256-GCM with a key derived via scrypt from a
+      server-side secret. Only ciphertext is stored in the database. Decryption occurs only
+      at the point of authorized access.
+    </p>
+
+    <h3>3.2 Encryption in Transit</h3>
+    <p>
+      All communications between your browser and the Service are encrypted via TLS. The Service
+      enforces HTTPS in production with HTTP Strict Transport Security (HSTS) preloading and a
+      two-year max-age directive.
+    </p>
+
+    <h3>3.3 Access Controls</h3>
+    <ul>
+      <li><strong>Role-based access control (RBAC)</strong> — three distinct roles (patient,
+        researcher, root administrator) with enforced separation of privileges.</li>
+      <li><strong>Patient-controlled researcher access</strong> — researchers can view your
+        records only after you explicitly grant permission. You may revoke access at any time,
+        effective immediately.</li>
+      <li><strong>Multi-factor authentication</strong> — optional TOTP-based second factor with
+        single-use recovery passcodes, and WebAuthn passkey support (Touch ID, Windows Hello,
+        security keys).</li>
+      <li><strong>Automatic session expiration</strong> — sessions expire after 8 hours
+        (configurable by the Service operator).</li>
+      <li><strong>Account lockout</strong> — 5 failed login attempts within 15 minutes triggers
+        a temporary lockout for that account.</li>
+    </ul>
+
+    <h3>3.4 Audit Logging</h3>
+    <p>
+      Every access to, modification of, or deletion of PHI generates an immutable audit log
+      entry. These logs record the actor, timestamp, IP address, user agent, target resource,
+      action performed, and outcome. Audit logs are accessible only to the root administrator
+      and are retained in accordance with HIPAA's six-year retention requirement.
+    </p>
+
+    <h2>4. How We Use Your Data</h2>
+    <ul>
+      <li><strong>Intake records</strong> are stored encrypted for your access and, with your
+        explicit consent (via researcher grants), for authorized researcher review. Records
+        are packaged as LLM-ready markdown for downstream analysis alongside multi-omics data.</li>
+      <li><strong>Email address</strong> is used solely for account authentication, email
+        verification, and password reset. We do not send marketing communications.</li>
+      <li><strong>Audit data</strong> is used for security monitoring, incident investigation,
+        and HIPAA compliance. It is never used for profiling or marketing.</li>
+    </ul>
+
+    <h2>5. Data Sharing</h2>
+    <p>We do not sell, rent, or trade your personal information or PHI. Your data is shared
+      only in the following circumstances:</p>
+    <ul>
+      <li><strong>With researchers you authorize</strong> — only after you grant explicit access
+        through the Service's grant mechanism.</li>
+      <li><strong>With the root administrator</strong> — for system administration purposes as
+        required by HIPAA's administrative provisions.</li>
+      <li><strong>As required by law</strong> — in response to a valid subpoena, court order, or
+        government investigation, in compliance with HIPAA's permitted disclosures.</li>
+      <li><strong>Business associates</strong> — service providers who process data on our behalf
+        are bound by Business Associate Agreements (BAAs) as required by HIPAA.</li>
+    </ul>
+
+    <h2>6. Your Rights</h2>
+    <p>Under HIPAA and applicable state law, you have the right to:</p>
+    <ul>
+      <li><strong>Access</strong> — view and download your intake records at any time through
+        your patient dashboard.</li>
+      <li><strong>Amendment</strong> — edit your submitted intake records through the Service
+        interface.</li>
+      <li><strong>Accounting of disclosures</strong> — request an accounting of who has accessed
+        your records via the audit log (contact the root administrator).</li>
+      <li><strong>Restriction</strong> — grant or revoke researcher access to your records at
+        your sole discretion, effective immediately.</li>
+      <li><strong>Deletion</strong> — delete individual records or your entire account, which
+        permanently and irreversibly removes all associated data including intake records,
+        authentication credentials, and access grants.</li>
+      <li><strong>Breach notification</strong> — receive notification in the event of a breach
+        of your unsecured PHI, as required by the HIPAA Breach Notification Rule.</li>
+    </ul>
+
+    <h2>7. Data Retention</h2>
+    <ul>
+      <li><strong>Intake records</strong> are retained until you delete them or delete your
+        account.</li>
+      <li><strong>Audit logs</strong> are retained for a minimum of six (6) years in compliance
+        with HIPAA's documentation retention requirements (45 CFR § 164.530(j)).</li>
+      <li><strong>Account data</strong> is retained until you delete your account. Upon account
+        deletion, all associated records, tokens, grants, and credentials are permanently
+        removed via cascading deletion.</li>
+      <li><strong>Password reset and verification tokens</strong> — only sha256 hashes are
+        stored; they expire automatically (1 hour for reset tokens, 30 minutes for verification
+        codes) and are marked as used upon redemption.</li>
+    </ul>
+
+    <h2>8. Cookies and Tracking</h2>
+    <p>
+      The Service uses a single HTTP-only, SameSite=Strict session cookie for authentication.
+      This cookie contains a signed JWT and cannot be read by client-side JavaScript. We do not
+      use tracking cookies, analytics pixels, or third-party advertising scripts.
+    </p>
+
+    <h2>9. Children's Privacy</h2>
+    <p>
+      The Service is not directed at individuals under the age of 18. We do not knowingly collect
+      information from minors. If you believe a minor has provided information through the
+      Service, contact the Service operator for removal.
+    </p>
+
+    <h2>10. International Users</h2>
+    <p>
+      The Service is operated in the United States and subject to U.S. federal and state law,
+      including HIPAA. If you access the Service from outside the United States, you consent to
+      the transfer and processing of your data in the United States.
+    </p>
+
+    <h2>11. Changes to This Policy</h2>
+    <p>
+      We may update this Privacy Policy to reflect changes in our practices or legal
+      requirements. Material changes will be posted on this page with an updated effective date.
+      Continued use of the Service constitutes acceptance of the revised policy.
+    </p>
+
+    <h2>12. Contact</h2>
+    <p>
+      For questions about this Privacy Policy, to exercise your HIPAA rights, to request an
+      accounting of disclosures, or to report a security concern, contact the Service operator's
+      designated Privacy Officer at the contact information provided during account registration
+      or system deployment.
+    </p>
+  </div>
+
+  <div class="mt-8 border-t border-slate-200 pt-6 text-sm text-slate-500">
+    <a routerLink="/terms" class="font-medium text-brand-700 hover:underline">Terms of Use</a>
+    <span class="mx-2">·</span>
+    <a routerLink="/" class="font-medium text-brand-700 hover:underline">Back to home</a>
+  </div>
+</div>
