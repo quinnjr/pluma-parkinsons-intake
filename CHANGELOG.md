@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.1] — 2026-04-19
+
+### Added
+
+- GitHub Actions workflow to build and push the Docker image to `ghcr.io` on every version tag. Multi-platform (amd64 + arm64) with GHA layer cache.
+
 ## [0.2.0] — 2026-04-19
 
 ### Added
