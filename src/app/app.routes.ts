@@ -8,10 +8,14 @@ import { ResetPasswordComponent } from './admin/reset/reset-password.component';
 import { VerifyEmailComponent } from './admin/verify-email/verify-email.component';
 import { PatientSignupComponent } from './patient/signup/patient-signup.component';
 import { PatientDashboardComponent } from './patient/dashboard/patient-dashboard.component';
+import { TermsComponent } from './legal/terms/terms.component';
+import { PrivacyComponent } from './legal/privacy/privacy.component';
 import { authGuard } from './shared/auth.guard';
 
 export const routes: Routes = [
   { path: '', component: IntakeFormComponent },
+  { path: 'terms', component: TermsComponent },
+  { path: 'privacy', component: PrivacyComponent },
   { path: 'admin/login', component: LoginComponent },
   { path: 'admin/signup', component: SignupComponent },
   { path: 'admin/forgot', component: ForgotPasswordComponent },
