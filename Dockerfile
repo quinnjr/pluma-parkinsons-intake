@@ -3,25 +3,32 @@
 ARG NODE_VERSION=22
 ARG PNPM_VERSION=10.33.0
 
-FROM node:${NODE_VERSION}-slim AS base
+# ── Base ────────────────────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS base
 ARG PNPM_VERSION
 ENV PNPM_HOME=/root/.local/share/pnpm \
     PATH=/root/.local/share/pnpm:$PATH
 RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 WORKDIR /app
 
+# ── Dependencies ────────────────────────────────────────────────────────
+# Native modules (argon2, better-sqlite3) need a C toolchain at install time.
 FROM base AS deps
+RUN apk add --no-cache python3 make g++
 COPY package.json pnpm-lock.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 
+# ── Build ───────────────────────────────────────────────────────────────
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm exec prisma generate \
  && pnpm run build
 
-FROM node:${NODE_VERSION}-slim AS runtime
+# ── Runtime ─────────────────────────────────────────────────────────────
+# Minimal Alpine image — no compiler, no dev headers.
+FROM node:${NODE_VERSION}-alpine AS runtime
 ARG PNPM_VERSION
 ENV NODE_ENV=production \
     PORT=4000 \
@@ -43,5 +50,4 @@ COPY --from=build   --chown=node:node /app/prisma.config.ts /app/package.json ./
 USER node
 EXPOSE 4000
 
-# Run migrations against the mounted volume, then boot the SSR + API server.
 CMD ["sh", "-c", "pnpm exec prisma migrate deploy && node dist/pluma-parkinsons-intake/server/server.mjs"]
