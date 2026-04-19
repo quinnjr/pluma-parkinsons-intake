@@ -1,0 +1,85 @@
+# Default: auto-detect text, normalize to LF in the repo
+* text=auto eol=lf
+
+# Explicit text files
+*.ts        text eol=lf
+*.tsx       text eol=lf
+*.js        text eol=lf
+*.jsx       text eol=lf
+*.mjs       text eol=lf
+*.cjs       text eol=lf
+*.json      text eol=lf
+*.jsonc     text eol=lf
+*.html      text eol=lf
+*.css       text eol=lf
+*.scss      text eol=lf
+*.sass      text eol=lf
+*.less      text eol=lf
+*.md        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.toml      text eol=lf
+*.xml       text eol=lf
+*.svg       text eol=lf
+*.sh        text eol=lf
+*.prisma    text eol=lf
+*.sql       text eol=lf
+*.graphql   text eol=lf
+*.editorconfig text eol=lf
+.prettierrc text eol=lf
+.postcssrc.json text eol=lf
+Dockerfile  text eol=lf
+
+# Windows-only scripts keep CRLF
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+*.ps1       text eol=crlf
+
+# Binary assets — never diff, never convert line endings
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.webp      binary
+*.avif      binary
+*.bmp       binary
+*.tiff      binary
+*.pdf       binary
+*.woff      binary
+*.woff2     binary
+*.ttf       binary
+*.otf       binary
+*.eot       binary
+*.mp3       binary
+*.mp4       binary
+*.webm      binary
+*.mov       binary
+*.zip       binary
+*.gz        binary
+*.tgz       binary
+*.7z        binary
+*.rar       binary
+*.db        binary
+*.sqlite    binary
+*.sqlite3   binary
+
+# Generated / vendored — collapse in diffs and exclude from GitHub language stats
+package-lock.json    linguist-generated=true -diff
+yarn.lock            linguist-generated=true -diff
+pnpm-lock.yaml       linguist-generated=true -diff
+dist/**              linguist-generated=true
+.angular/**          linguist-generated=true
+src/generated/**     linguist-generated=true
+server/generated/**  linguist-generated=true
+
+# Jupyter notebooks — treat as text but skip diff noise
+*.ipynb     text eol=lf linguist-language=JSON -diff
+
+# Keep repo archives (git archive) clean of dev-only files
+.github/**          export-ignore
+.vscode/**          export-ignore
+.editorconfig       export-ignore
+.prettierrc         export-ignore
+.gitattributes      export-ignore
+.gitignore          export-ignore

@@ -1,0 +1,179 @@
+<div class="min-h-screen bg-slate-50">
+  <header class="border-b border-slate-200 bg-white">
+    <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Your records</p>
+        <p class="text-sm font-medium text-slate-800">{{ user()?.email }}</p>
+      </div>
+      <button type="button" (click)="logout()"
+              class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+        Sign out
+      </button>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-5xl space-y-6 px-4 py-6">
+
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 class="text-lg font-semibold text-slate-900">Claim a record</h2>
+      <p class="mt-1 text-sm text-slate-500">
+        If you have a lookup code from a submission that isn't attached to your account yet, enter it here.
+      </p>
+      <form class="mt-3 flex gap-2" (submit)="$event.preventDefault(); claim()">
+        <input type="text" placeholder="e.g. ept417nwbveatju6564arli0" name="code"
+               class="flex-1 font-mono"
+               [ngModel]="claimInput()" (ngModelChange)="claimInput.set($event)" />
+        <button type="submit"
+                class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">
+          Claim
+        </button>
+      </form>
+      @if (claimError(); as e) {
+        <div class="mt-2 rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900">{{ e }}</div>
+      }
+    </section>
+
+    <section>
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-xl font-semibold text-slate-900">Submissions</h2>
+        <button type="button" (click)="refresh()" [disabled]="listLoading()"
+                class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50">
+          {{ listLoading() ? 'Loading…' : 'Refresh' }}
+        </button>
+      </div>
+
+      @if (listError(); as e) {
+        <div class="mb-3 rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900">{{ e }}</div>
+      }
+
+      <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50">
+            <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+              <th class="px-4 py-2">Lookup code</th>
+              <th class="px-4 py-2">Created</th>
+              <th class="px-4 py-2 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm">
+            @for (s of submissions(); track s.id) {
+              <tr>
+                <td class="px-4 py-2 font-mono text-xs text-slate-700">{{ s.lookupCode }}</td>
+                <td class="px-4 py-2 text-slate-700">{{ s.createdAt | date: 'medium' }}</td>
+                <td class="px-4 py-2 text-right">
+                  <button type="button" (click)="view(s.id)"
+                          class="mr-2 text-sm font-medium text-brand-700 hover:underline">
+                    View
+                  </button>
+                  <button type="button" (click)="deleteSubmission(s.id)"
+                          class="text-sm font-medium text-rose-700 hover:underline">
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3" class="px-4 py-8 text-center text-sm text-slate-500">
+                  No records yet. Claim one above or submit a new intake form.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    @if (selected(); as sel) {
+      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h3 class="text-lg font-semibold text-slate-900">Submission detail</h3>
+            <p class="text-xs text-slate-500">
+              Lookup code <code class="font-mono">{{ sel.data.lookupCode }}</code> · {{ sel.data.createdAt | date: 'medium' }}
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" (click)="downloadSelected()"
+                    class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+              Download
+            </button>
+            @if (sel.kind === 'view') {
+              <button type="button" (click)="startEdit()"
+                      class="rounded-lg border border-brand-300 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm hover:bg-brand-50">
+                Edit
+              </button>
+            }
+            <button type="button" (click)="deleteSubmission(sel.data.id)"
+                    class="rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 shadow-sm hover:bg-rose-50">
+              Delete
+            </button>
+            <button type="button" (click)="closeSelected()"
+                    class="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-500 hover:bg-slate-100">
+              Close
+            </button>
+          </div>
+        </div>
+
+        @if (detailError(); as e) {
+          <div class="mb-3 rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900">{{ e }}</div>
+        }
+
+        @if (sel.kind === 'view') {
+          <dl class="grid gap-3 text-sm sm:grid-cols-3">
+            <div><dt class="text-xs font-semibold uppercase text-slate-500">Age band</dt><dd class="text-slate-800">{{ sel.data.ageBand ?? '—' }}</dd></div>
+            <div><dt class="text-xs font-semibold uppercase text-slate-500">Sex at birth</dt><dd class="text-slate-800">{{ sel.data.sexAtBirth ?? '—' }}</dd></div>
+            <div><dt class="text-xs font-semibold uppercase text-slate-500">ZIP</dt><dd class="text-slate-800">{{ sel.data.zipCode ?? '—' }}</dd></div>
+          </dl>
+          <h4 class="mt-4 text-sm font-semibold text-slate-800">Markdown</h4>
+          <pre class="mt-2 max-h-96 overflow-auto rounded-lg bg-slate-900 p-4 text-xs leading-relaxed text-slate-100">{{ sel.data.markdown }}</pre>
+        } @else {
+          <div class="grid gap-3 text-sm sm:grid-cols-3">
+            <div>
+              <label class="field-label" for="editAge">Age band</label>
+              <input id="editAge" type="text" [ngModel]="sel.ageBand" (ngModelChange)="patch('ageBand', $event)" name="editAge" />
+            </div>
+            <div>
+              <label class="field-label" for="editSex">Sex at birth</label>
+              <input id="editSex" type="text" [ngModel]="sel.sexAtBirth" (ngModelChange)="patch('sexAtBirth', $event)" name="editSex" />
+            </div>
+            <div>
+              <label class="field-label" for="editZip">ZIP</label>
+              <input id="editZip" type="text" [ngModel]="sel.zipCode" (ngModelChange)="patch('zipCode', $event)" name="editZip" />
+            </div>
+          </div>
+          <label class="field-label mt-4" for="editMd">Markdown</label>
+          <textarea id="editMd" rows="16"
+                    class="mt-1 w-full rounded-lg border border-slate-300 p-3 font-mono text-xs"
+                    [ngModel]="sel.markdown" (ngModelChange)="patch('markdown', $event)" name="editMd"></textarea>
+          <div class="mt-3 flex gap-2">
+            <button type="button" (click)="saveEdit()" [disabled]="sel.saving"
+                    class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50">
+              {{ sel.saving ? 'Saving…' : 'Save changes' }}
+            </button>
+            <button type="button" (click)="cancelEdit()"
+                    class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+              Cancel
+            </button>
+          </div>
+        }
+      </section>
+    }
+
+    <app-researchers></app-researchers>
+
+    <app-mfa-settings></app-mfa-settings>
+
+    <app-passkey-settings></app-passkey-settings>
+
+    <section class="rounded-2xl border border-rose-200 bg-rose-50 p-6">
+      <h3 class="text-base font-semibold text-rose-900">Danger zone</h3>
+      <p class="mt-1 text-sm text-rose-800">
+        Deleting your account also deletes every record attached to it. This cannot be undone.
+      </p>
+      <button type="button" (click)="deleteMyAccount()" [disabled]="deletingAccount()"
+              class="mt-3 rounded-lg border border-rose-400 bg-white px-4 py-2 text-sm font-semibold text-rose-700 shadow-sm hover:bg-rose-100 disabled:opacity-50">
+        {{ deletingAccount() ? 'Deleting…' : 'Delete my account' }}
+      </button>
+    </section>
+  </main>
+</div>

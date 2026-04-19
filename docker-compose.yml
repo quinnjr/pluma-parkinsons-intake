@@ -1,0 +1,37 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: pluma-parkinsons-intake:local
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-4000}:4000"
+    env_file:
+      - .env
+    environment:
+      # Volume-backed SQLite path; overrides .env for container-local layout.
+      DATABASE_URL: file:/data/pluma.db
+      PORT: "4000"
+      NG_ALLOWED_HOSTS: "${NG_ALLOWED_HOSTS:-localhost,127.0.0.1}"
+    volumes:
+      - pluma-data:/data
+    tmpfs:
+      - /tmp
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "require('http').get('http://127.0.0.1:4000/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  pluma-data:

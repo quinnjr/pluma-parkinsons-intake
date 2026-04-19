@@ -1,0 +1,75 @@
+<div class="mx-auto max-w-md px-4 py-16">
+  <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+    @if (challengeToken()) {
+      <h1 class="text-2xl font-bold text-slate-900">Two-factor verification</h1>
+      <p class="mt-1 text-sm text-slate-500">
+        Enter the 6-digit code from your authenticator app, or one of your saved recovery passcodes.
+      </p>
+      <form class="mt-6 space-y-4" (submit)="$event.preventDefault(); onSubmitMfa()">
+        <div>
+          <label class="field-label" for="mfaCode">Authenticator code or recovery passcode</label>
+          <input id="mfaCode" type="text" autocomplete="one-time-code"
+                 required maxlength="32"
+                 class="font-mono tracking-widest"
+                 [ngModel]="mfaCode()" (ngModelChange)="mfaCode.set($event)" name="mfaCode" />
+        </div>
+        @if (errorMessage(); as msg) {
+          <div class="rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900">{{ msg }}</div>
+        }
+        <button type="submit" [disabled]="submitting()"
+                class="w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-50">
+          {{ submitting() ? 'Verifying…' : 'Verify' }}
+        </button>
+      </form>
+      <p class="mt-4 text-center text-sm">
+        <button type="button" (click)="cancelMfa()" class="text-slate-600 hover:underline">
+          Use a different account
+        </button>
+      </p>
+    } @else {
+      <h1 class="text-2xl font-bold text-slate-900">Admin sign in</h1>
+      <p class="mt-1 text-sm text-slate-500">Root, researcher, and patient accounts.</p>
+
+      <form class="mt-6 space-y-4" (submit)="$event.preventDefault(); onSubmit()">
+        <div>
+          <label class="field-label" for="email">Email</label>
+          <input id="email" type="email" autocomplete="email" required
+                 [ngModel]="email()" (ngModelChange)="email.set($event)" name="email" />
+        </div>
+        <div>
+          <label class="field-label" for="password">Password</label>
+          <input id="password" type="password" autocomplete="current-password" required
+                 [ngModel]="password()" (ngModelChange)="password.set($event)" name="password" />
+        </div>
+
+        @if (errorMessage(); as msg) {
+          <div class="rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900">{{ msg }}</div>
+        }
+
+        <button type="submit" [disabled]="submitting()"
+                class="w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-50">
+          {{ submitting() ? 'Signing in…' : 'Sign in' }}
+        </button>
+      </form>
+
+      <div class="mt-4 flex items-center gap-3 text-sm text-slate-400">
+        <div class="h-px flex-1 bg-slate-200"></div>
+        or
+        <div class="h-px flex-1 bg-slate-200"></div>
+      </div>
+
+      <button type="button" (click)="signInWithPasskey()" [disabled]="passkeyBusy()"
+              class="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg>
+        {{ passkeyBusy() ? 'Waiting for device…' : 'Sign in with a passkey' }}
+      </button>
+
+      <p class="mt-4 text-center text-sm text-slate-600">
+        <a routerLink="/admin/forgot" class="font-medium text-brand-700 hover:underline">Forgot your password?</a>
+      </p>
+      <p class="mt-2 text-center text-sm text-slate-600">
+        No account? <a routerLink="/admin/signup" class="font-medium text-brand-700 hover:underline">Request access</a>
+      </p>
+    }
+  </div>
+</div>

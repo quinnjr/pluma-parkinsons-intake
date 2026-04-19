@@ -1,0 +1,774 @@
+<div class="mx-auto max-w-4xl px-4 py-8 sm:py-12">
+  @if (!authReady()) {
+    <p class="py-16 text-center text-sm text-slate-500">Loading…</p>
+  } @else if (!canFillForm()) {
+    <section class="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900">Sign up to start your intake</h1>
+      <p class="mt-3 text-sm text-slate-600">
+        You need a patient account before filling out the intake form. Your responses are tied to your account
+        so you can edit, download, or delete them later.
+      </p>
+
+      @if (isSignedInNonPatient()) {
+        <div class="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          You're signed in as <strong>{{ currentUser()?.email }}</strong> ({{ currentUser()?.role }}).
+          The intake form is only for patient accounts.
+          <button type="button" (click)="signOut()"
+                  class="ml-2 font-medium underline hover:text-amber-700">Sign out</button>
+          to continue as a patient.
+        </div>
+      } @else {
+        <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+          <a routerLink="/patient/signup"
+             class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700">
+            Create an account
+          </a>
+          <a routerLink="/admin/login"
+             class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50">
+            Sign in
+          </a>
+        </div>
+      }
+    </section>
+  } @else if (submitted() && payload(); as p) {
+    <app-submission-review
+      [payload]="p"
+      (startOver)="startOver()"></app-submission-review>
+  } @else {
+    <div class="mb-4 flex items-center justify-between text-xs text-slate-500">
+      <span>Signed in as <strong class="text-slate-800">{{ currentUser()?.email }}</strong></span>
+      <span class="flex gap-3">
+        <a routerLink="/patient" class="font-medium text-brand-700 hover:underline">My records</a>
+        <button type="button" (click)="signOut()" class="font-medium text-slate-600 hover:underline">Sign out</button>
+      </span>
+    </div>
+    <header class="mb-8 text-center">
+      <div class="inline-flex items-center gap-2 rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-700">
+        <fa-icon [icon]="icons.dna"></fa-icon>
+        Intake for downstream multi-omics review
+      </div>
+      <h1 class="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+        Parkinson's Risk-Factor Intake
+      </h1>
+      <p class="mx-auto mt-2 max-w-2xl text-sm text-slate-600">
+        This form collects environmental, occupational, and symptom information to be bundled
+        with your multi-omics data for analysis by a downstream clinical reasoning model. No
+        risk score or diagnosis is calculated here.
+      </p>
+    </header>
+
+    <div class="mb-6">
+      <div class="mb-2 flex items-center justify-between text-xs font-medium text-slate-500">
+        <span>Step {{ stepIndex() + 1 }} of {{ steps.length }}</span>
+        <span>{{ progress() }}% complete</span>
+      </div>
+      <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+        <div class="h-full rounded-full bg-brand-500 transition-all" [style.width.%]="progress()"></div>
+      </div>
+      <nav class="mt-4 hidden flex-wrap gap-2 sm:flex">
+        @for (s of steps; track s.key; let i = $index) {
+          <button
+            type="button"
+            (click)="goTo(i)"
+            class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition"
+            [class.border-brand-500]="i === stepIndex()"
+            [class.bg-brand-50]="i === stepIndex()"
+            [class.text-brand-700]="i === stepIndex()"
+            [class.border-slate-200]="i !== stepIndex()"
+            [class.bg-white]="i !== stepIndex()"
+            [class.text-slate-600]="i !== stepIndex()">
+            <fa-icon [icon]="s.icon"></fa-icon>
+            {{ s.title }}
+          </button>
+        }
+      </nav>
+    </div>
+
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <div class="mb-6 flex items-start gap-4">
+        <div class="flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-brand-100 text-brand-700">
+          <fa-icon [icon]="currentStep().icon"></fa-icon>
+        </div>
+        <div>
+          <h2 class="text-xl font-semibold text-slate-900">{{ currentStep().title }}</h2>
+          <p class="text-sm text-slate-500">{{ currentStep().subtitle }}</p>
+        </div>
+      </div>
+
+      @if (currentStep().key === 'contact') {
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="field-label" for="firstName">First name</label>
+            <input id="firstName" type="text" [ngModel]="form().contact.firstName"
+                   (ngModelChange)="patch('contact', { firstName: $event })" autocomplete="given-name" />
+          </div>
+          <div>
+            <label class="field-label" for="lastName">Last name</label>
+            <input id="lastName" type="text" [ngModel]="form().contact.lastName"
+                   (ngModelChange)="patch('contact', { lastName: $event })" autocomplete="family-name" />
+          </div>
+          <div>
+            <label class="field-label" for="email">Email <span class="text-slate-400">(optional)</span></label>
+            <input id="email" type="email" [ngModel]="form().contact.email"
+                   (ngModelChange)="patch('contact', { email: $event })" autocomplete="email" />
+          </div>
+          <div>
+            <label class="field-label" for="zip">ZIP code <span class="text-slate-400">(optional)</span></label>
+            <input id="zip" type="text" maxlength="10" [ngModel]="form().contact.zipCode"
+                   (ngModelChange)="patch('contact', { zipCode: $event })" autocomplete="postal-code" />
+            <p class="mt-1 text-xs text-slate-500">Useful downstream for flagging nearby Superfund or industrial contamination sites.</p>
+          </div>
+        </div>
+        <div class="mt-6 flex items-start gap-3 rounded-lg bg-blue-50 p-4 text-sm text-blue-900">
+          <fa-icon [icon]="icons.info" class="mt-0.5"></fa-icon>
+          <p>This is an intake form, not a diagnostic tool. Responses are compiled into a structured record for your clinician or an LLM-driven multi-omics reasoning workflow.</p>
+        </div>
+      }
+
+      @if (currentStep().key === 'demographics') {
+        <div class="space-y-6">
+          <div>
+            <span class="field-label">Age range</span>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-6">
+              @for (band of AGE_BANDS; track band) {
+                <label class="choice-card" [class.selected]="form().demographics.ageBand === band">
+                  <input type="radio" name="age" [value]="band"
+                         [checked]="form().demographics.ageBand === band"
+                         (change)="patch('demographics', { ageBand: band })" />
+                  <span>{{ band }}</span>
+                </label>
+              }
+            </div>
+          </div>
+
+          <div>
+            <span class="field-label">Sex at birth</span>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              @for (opt of SEX_OPTS; track opt.v) {
+                <label class="choice-card" [class.selected]="form().demographics.sexAtBirth === opt.v">
+                  <input type="radio" name="sex" [value]="opt.v"
+                         [checked]="form().demographics.sexAtBirth === opt.v"
+                         (change)="patch('demographics', { sexAtBirth: opt.v })" />
+                  <span>{{ opt.l }}</span>
+                </label>
+              }
+            </div>
+          </div>
+
+          <div>
+            <span class="field-label">First-degree relative (parent or sibling) with Parkinson's disease?</span>
+            <div class="grid grid-cols-3 gap-2">
+              @for (opt of YES_NO_UNKNOWN; track opt.v) {
+                <label class="choice-card" [class.selected]="form().demographics.familyHistory === opt.v">
+                  <input type="radio" name="fam" [value]="opt.v"
+                         [checked]="form().demographics.familyHistory === opt.v"
+                         (change)="patch('demographics', { familyHistory: opt.v })" />
+                  <span>{{ opt.l }}</span>
+                </label>
+              }
+            </div>
+          </div>
+
+          <div>
+            <span class="field-label">Have you had genetic testing (GBA, LRRK2, SNCA)?</span>
+            <div class="grid grid-cols-3 gap-2">
+              @for (opt of YES_NO_UNKNOWN; track opt.v) {
+                <label class="choice-card" [class.selected]="form().demographics.geneticTesting === opt.v">
+                  <input type="radio" name="gene" [value]="opt.v"
+                         [checked]="form().demographics.geneticTesting === opt.v"
+                         (change)="patch('demographics', { geneticTesting: opt.v })" />
+                  <span>{{ opt.l }}</span>
+                </label>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (currentStep().key === 'environmental') {
+        <div class="space-y-8">
+
+          <fieldset class="rounded-xl border border-slate-200 bg-slate-50/60 p-5">
+            <legend class="flex items-center gap-2 px-2 text-sm font-semibold text-slate-700">
+              <fa-icon [icon]="icons.location"></fa-icon>
+              Camp Lejeune service
+            </legend>
+            <p class="mb-3 text-xs text-slate-500">
+              Service at Marine Corps Base Camp Lejeune between 1953 and 1987 carried measurable exposure to
+              trichloroethylene (TCE), perchloroethylene (PCE), benzene, and vinyl chloride in the drinking water.
+            </p>
+            <span class="field-label">Were you stationed, worked, or resided at Camp Lejeune for 30 days or more between 1953–1987?</span>
+            <div class="grid grid-cols-3 gap-2">
+              @for (opt of YES_NO_UNKNOWN; track opt.v) {
+                <label class="choice-card" [class.selected]="form().environmental.campLejeuneStationed === opt.v">
+                  <input type="radio" name="cl" [value]="opt.v"
+                         [checked]="form().environmental.campLejeuneStationed === opt.v"
+                         (change)="patch('environmental', { campLejeuneStationed: opt.v })" />
+                  <span>{{ opt.l }}</span>
+                </label>
+              }
+            </div>
+            @if (form().environmental.campLejeuneStationed === 'yes') {
+              <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label class="field-label" for="clMonths">Approximate months stationed there</label>
+                  <input id="clMonths" type="number" min="0" max="480"
+                         [ngModel]="form().environmental.campLejeuneMonths"
+                         (ngModelChange)="patch('environmental', { campLejeuneMonths: $event })" />
+                </div>
+                <div>
+                  <label class="field-label" for="clYears">Years of service (e.g. 1978–1982)</label>
+                  <input id="clYears" type="text" placeholder="1978–1982"
+                         [ngModel]="form().environmental.campLejeuneYears"
+                         (ngModelChange)="patch('environmental', { campLejeuneYears: $event })" />
+                </div>
+              </div>
+            }
+          </fieldset>
+
+          <fieldset class="rounded-xl border border-slate-200 bg-slate-50/60 p-5">
+            <legend class="flex items-center gap-2 px-2 text-sm font-semibold text-slate-700">
+              <fa-icon [icon]="icons.industry"></fa-icon>
+              Dry cleaner / laundromat proximity
+            </legend>
+            <p class="mb-3 text-xs text-slate-500">
+              Tetrachloroethylene (PCE) used in dry-cleaning can volatize into apartments above or adjacent to the operation.
+            </p>
+            <span class="field-label">Have you ever lived in an apartment <em>directly above</em> a dry cleaner or laundromat?</span>
+            <div class="grid grid-cols-3 gap-2">
+              @for (opt of YES_NO_UNKNOWN; track opt.v) {
+                <label class="choice-card" [class.selected]="form().environmental.livedAboveDryCleaner === opt.v">
+                  <input type="radio" name="dcAbove" [value]="opt.v"
+                         [checked]="form().environmental.livedAboveDryCleaner === opt.v"
+                         (change)="patch('environmental', { livedAboveDryCleaner: opt.v })" />
+                  <span>{{ opt.l }}</span>
+                </label>
+              }
+            </div>
+
+            <span class="field-label mt-4">Have you lived in a building sharing a wall with one?</span>
+            <div class="grid grid-cols-3 gap-2">
+              @for (opt of YES_NO_UNKNOWN; track opt.v) {
+                <label class="choice-card" [class.selected]="form().environmental.livedNearDryCleaner === opt.v">
+                  <input type="radio" name="dcNear" [value]="opt.v"
+                         [checked]="form().environmental.livedNearDryCleaner === opt.v"
+                         (change)="patch('environmental', { livedNearDryCleaner: opt.v })" />
+                  <span>{{ opt.l }}</span>
+                </label>
+              }
+            </div>
+
+            @if (form().environmental.livedAboveDryCleaner === 'yes' || form().environmental.livedNearDryCleaner === 'yes') {
+              <div class="mt-4">
+                <label class="field-label" for="dcYears">Total years of that residence</label>
+                <input id="dcYears" type="number" min="0" max="80"
+                       [ngModel]="form().environmental.dryCleanerProximityYears"
+                       (ngModelChange)="patch('environmental', { dryCleanerProximityYears: $event })" />
+              </div>
+            }
+          </fieldset>
+
+          <fieldset class="rounded-xl border border-slate-200 bg-slate-50/60 p-5">
+            <legend class="flex items-center gap-2 px-2 text-sm font-semibold text-slate-700">
+              <fa-icon [icon]="icons.leaf"></fa-icon>
+              Pesticide, herbicide, and agricultural exposure
+            </legend>
+
+            <span class="field-label">Occupational pesticide or herbicide use</span>
+            <div class="grid grid-cols-3 gap-2">
+              @for (opt of YES_NO_UNKNOWN; track opt.v) {
+                <label class="choice-card" [class.selected]="form().environmental.pesticideOccupational === opt.v">
+                  <input type="radio" name="pestOcc" [value]="opt.v"
+                         [checked]="form().environmental.pesticideOccupational === opt.v"
+                         (change)="patch('environmental', { pesticideOccupational: opt.v })" />
+                  <span>{{ opt.l }}</span>
+                </label>
+              }
+            </div>
+
+            <span class="field-label mt-4">How often do you apply pesticides/herbicides at home?</span>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-5">
+              @for (f of FREQUENCY_OPTS; track f.v) {
+                <label class="choice-card" [class.selected]="form().environmental.pesticideHome === f.v">
+                  <input type="radio" name="pestHome" [value]="f.v"
+                         [checked]="form().environmental.pesticideHome === f.v"
+                         (change)="patch('environmental', { pesticideHome: f.v })" />
+                  <span>{{ f.l }}</span>
+                </label>
+              }
+            </div>
+
+            <span class="field-label mt-4">Have you worked in agriculture or farming?</span>
+            <div class="grid grid-cols-3 gap-2">
+              @for (opt of YES_NO_UNKNOWN; track opt.v) {
+                <label class="choice-card" [class.selected]="form().environmental.agriculturalWork === opt.v">
+                  <input type="radio" name="ag" [value]="opt.v"
+                         [checked]="form().environmental.agriculturalWork === opt.v"
+                         (change)="patch('environmental', { agriculturalWork: opt.v })" />
+                  <span>{{ opt.l }}</span>
+                </label>
+              }
+            </div>
+            @if (form().environmental.agriculturalWork === 'yes') {
+              <div class="mt-3">
+                <label class="field-label" for="agYears">Years in agricultural work</label>
+                <input id="agYears" type="number" min="0" max="80"
+                       [ngModel]="form().environmental.agriculturalWorkYears"
+                       (ngModelChange)="patch('environmental', { agriculturalWorkYears: $event })" />
+              </div>
+            }
+
+            <span class="field-label mt-5">Known direct exposure to any of the following (check all that apply)</span>
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <label class="choice-card" [class.selected]="form().environmental.specificChemicals.paraquat">
+                <input type="checkbox"
+                       [checked]="form().environmental.specificChemicals.paraquat"
+                       (change)="patchChemicals({ paraquat: isChecked($event) })" />
+                <span>Paraquat (Gramoxone)</span>
+              </label>
+              <label class="choice-card" [class.selected]="form().environmental.specificChemicals.rotenone">
+                <input type="checkbox"
+                       [checked]="form().environmental.specificChemicals.rotenone"
+                       (change)="patchChemicals({ rotenone: isChecked($event) })" />
+                <span>Rotenone</span>
+              </label>
+              <label class="choice-card" [class.selected]="form().environmental.specificChemicals.organochlorines">
+                <input type="checkbox"
+                       [checked]="form().environmental.specificChemicals.organochlorines"
+                       (change)="patchChemicals({ organochlorines: isChecked($event) })" />
+                <span>Organochlorines (DDT, dieldrin)</span>
+              </label>
+              <label class="choice-card" [class.selected]="form().environmental.specificChemicals.glyphosate">
+                <input type="checkbox"
+                       [checked]="form().environmental.specificChemicals.glyphosate"
+                       (change)="patchChemicals({ glyphosate: isChecked($event) })" />
+                <span>Glyphosate (Roundup) — occupational</span>
+              </label>
+              <label class="choice-card" [class.selected]="form().environmental.specificChemicals.agentOrange">
+                <input type="checkbox"
+                       [checked]="form().environmental.specificChemicals.agentOrange"
+                       (change)="patchChemicals({ agentOrange: isChecked($event) })" />
+                <span>Agent Orange / dioxin</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset class="rounded-xl border border-slate-200 bg-slate-50/60 p-5">
+            <legend class="flex items-center gap-2 px-2 text-sm font-semibold text-slate-700">
+              <fa-icon [icon]="icons.drop"></fa-icon>
+              Contaminated sites & water
+            </legend>
+
+            <span class="field-label">Closest long-term residence to an EPA Superfund or known industrial-contamination site</span>
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-5">
+              @for (opt of SUPERFUND_OPTS; track opt.v) {
+                <label class="choice-card" [class.selected]="form().environmental.superfundProximity === opt.v">
+                  <input type="radio" name="sf" [value]="opt.v"
+                         [checked]="form().environmental.superfundProximity === opt.v"
+                         (change)="patch('environmental', { superfundProximity: opt.v })" />
+                  <span>{{ opt.l }}</span>
+                </label>
+              }
+            </div>
+
+            <div class="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="field-label" for="well">Years drinking from a private well</label>
+                <input id="well" type="number" min="0" max="80"
+                       [ngModel]="form().environmental.wellWaterYears"
+                       (ngModelChange)="patch('environmental', { wellWaterYears: $event })" />
+              </div>
+              <div>
+                <span class="field-label">Regular occupational contact with industrial solvents (TCE, PCE, methylene chloride)</span>
+                <div class="grid grid-cols-3 gap-2">
+                  @for (opt of YES_NO_UNKNOWN; track opt.v) {
+                    <label class="choice-card" [class.selected]="form().environmental.industrialSolvents === opt.v">
+                      <input type="radio" name="solv" [value]="opt.v"
+                             [checked]="form().environmental.industrialSolvents === opt.v"
+                             (change)="patch('environmental', { industrialSolvents: opt.v })" />
+                      <span>{{ opt.l }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="rounded-xl border border-slate-200 bg-slate-50/60 p-5">
+            <legend class="flex items-center gap-2 px-2 text-sm font-semibold text-slate-700">
+              <fa-icon [icon]="icons.flask"></fa-icon>
+              Heavy metals & fumes
+            </legend>
+            <div class="grid gap-4 sm:grid-cols-3">
+              <div>
+                <span class="field-label">Welding (manganese fume)</span>
+                <div class="grid grid-cols-3 gap-2">
+                  @for (opt of YES_NO_SHORT; track opt.v) {
+                    <label class="choice-card" [class.selected]="form().environmental.welderManganese === opt.v">
+                      <input type="radio" name="weld" [value]="opt.v"
+                             [checked]="form().environmental.welderManganese === opt.v"
+                             (change)="patch('environmental', { welderManganese: opt.v })" />
+                      <span>{{ opt.l }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+              <div>
+                <span class="field-label">Lead pipe / paint exposure</span>
+                <div class="grid grid-cols-3 gap-2">
+                  @for (opt of YES_NO_SHORT; track opt.v) {
+                    <label class="choice-card" [class.selected]="form().environmental.leadPipeExposure === opt.v">
+                      <input type="radio" name="lead" [value]="opt.v"
+                             [checked]="form().environmental.leadPipeExposure === opt.v"
+                             (change)="patch('environmental', { leadPipeExposure: opt.v })" />
+                      <span>{{ opt.l }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+              <div>
+                <span class="field-label">Other heavy-metal exposure (mercury, cadmium)</span>
+                <div class="grid grid-cols-3 gap-2">
+                  @for (opt of YES_NO_SHORT; track opt.v) {
+                    <label class="choice-card" [class.selected]="form().environmental.heavyMetalExposure === opt.v">
+                      <input type="radio" name="hm" [value]="opt.v"
+                             [checked]="form().environmental.heavyMetalExposure === opt.v"
+                             (change)="patch('environmental', { heavyMetalExposure: opt.v })" />
+                      <span>{{ opt.l }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+            </div>
+          </fieldset>
+        </div>
+      }
+
+      @if (currentStep().key === 'lifestyle') {
+        <div class="space-y-6">
+          <div>
+            <span class="field-label">Have you ever had a head injury with loss of consciousness?</span>
+            <div class="grid grid-cols-3 gap-2">
+              @for (opt of YES_NO_UNKNOWN; track opt.v) {
+                <label class="choice-card" [class.selected]="form().lifestyle.headInjuryLossOfConsciousness === opt.v">
+                  <input type="radio" name="head" [value]="opt.v"
+                         [checked]="form().lifestyle.headInjuryLossOfConsciousness === opt.v"
+                         (change)="patch('lifestyle', { headInjuryLossOfConsciousness: opt.v })" />
+                  <span>{{ opt.l }}</span>
+                </label>
+              }
+            </div>
+          </div>
+          <div>
+            <span class="field-label">History of repeated head trauma (contact sports, military, boxing, etc.)</span>
+            <div class="grid grid-cols-3 gap-2">
+              @for (opt of YES_NO_UNKNOWN; track opt.v) {
+                <label class="choice-card" [class.selected]="form().lifestyle.repeatedHeadTrauma === opt.v">
+                  <input type="radio" name="rep" [value]="opt.v"
+                         [checked]="form().lifestyle.repeatedHeadTrauma === opt.v"
+                         (change)="patch('lifestyle', { repeatedHeadTrauma: opt.v })" />
+                  <span>{{ opt.l }}</span>
+                </label>
+              }
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <span class="field-label">Smoking status</span>
+              <div class="grid grid-cols-3 gap-2">
+                @for (opt of SMOKING_OPTS; track opt.v) {
+                  <label class="choice-card" [class.selected]="form().lifestyle.smokingStatus === opt.v">
+                    <input type="radio" name="smoke" [value]="opt.v"
+                           [checked]="form().lifestyle.smokingStatus === opt.v"
+                           (change)="patch('lifestyle', { smokingStatus: opt.v })" />
+                    <span>{{ opt.l }}</span>
+                  </label>
+                }
+              </div>
+            </div>
+            <div>
+              <span class="field-label">Daily caffeine</span>
+              <div class="grid grid-cols-4 gap-2">
+                @for (opt of CAFFEINE_OPTS; track opt.v) {
+                  <label class="choice-card" [class.selected]="form().lifestyle.caffeineDaily === opt.v">
+                    <input type="radio" name="caf" [value]="opt.v"
+                           [checked]="form().lifestyle.caffeineDaily === opt.v"
+                           (change)="patch('lifestyle', { caffeineDaily: opt.v })" />
+                    <span>{{ opt.l }}</span>
+                  </label>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <span class="field-label">Prior or current diagnoses (check all that apply)</span>
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <label class="choice-card" [class.selected]="form().lifestyle.priorDiagnoses.remSleepBehaviorDisorder">
+                <input type="checkbox"
+                       [checked]="form().lifestyle.priorDiagnoses.remSleepBehaviorDisorder"
+                       (change)="patchDiagnoses({ remSleepBehaviorDisorder: isChecked($event) })" />
+                <span>REM sleep behavior disorder</span>
+              </label>
+              <label class="choice-card" [class.selected]="form().lifestyle.priorDiagnoses.anosmia">
+                <input type="checkbox"
+                       [checked]="form().lifestyle.priorDiagnoses.anosmia"
+                       (change)="patchDiagnoses({ anosmia: isChecked($event) })" />
+                <span>Anosmia / hyposmia (loss of smell)</span>
+              </label>
+              <label class="choice-card" [class.selected]="form().lifestyle.priorDiagnoses.depression">
+                <input type="checkbox"
+                       [checked]="form().lifestyle.priorDiagnoses.depression"
+                       (change)="patchDiagnoses({ depression: isChecked($event) })" />
+                <span>Depression</span>
+              </label>
+              <label class="choice-card" [class.selected]="form().lifestyle.priorDiagnoses.anxiety">
+                <input type="checkbox"
+                       [checked]="form().lifestyle.priorDiagnoses.anxiety"
+                       (change)="patchDiagnoses({ anxiety: isChecked($event) })" />
+                <span>Anxiety disorder</span>
+              </label>
+              <label class="choice-card" [class.selected]="form().lifestyle.priorDiagnoses.constipationChronic">
+                <input type="checkbox"
+                       [checked]="form().lifestyle.priorDiagnoses.constipationChronic"
+                       (change)="patchDiagnoses({ constipationChronic: isChecked($event) })" />
+                <span>Chronic constipation</span>
+              </label>
+              <label class="choice-card" [class.selected]="form().lifestyle.priorDiagnoses.diabetes">
+                <input type="checkbox"
+                       [checked]="form().lifestyle.priorDiagnoses.diabetes"
+                       (change)="patchDiagnoses({ diabetes: isChecked($event) })" />
+                <span>Type 2 diabetes</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="field-label" for="meds">Current medications <span class="text-slate-400">(optional)</span></label>
+            <textarea id="meds" [ngModel]="form().lifestyle.medications"
+                      (ngModelChange)="patch('lifestyle', { medications: $event })"
+                      placeholder="List medications and dosages if you'd like to include them"></textarea>
+          </div>
+        </div>
+      }
+
+      @if (currentStep().key === 'motor') {
+        <p class="mb-4 text-sm text-slate-600">
+          Rate each motor symptom based on the last 3 months. These are the cardinal and supporting
+          clinical features used in the MDS Parkinson's disease diagnostic criteria.
+        </p>
+        <div class="space-y-5">
+          @for (row of MOTOR_CARDINAL; track row.key) {
+            <div>
+              <span class="field-label">{{ row.label }}</span>
+              <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                @for (sev of SEVERITY_OPTS; track sev.v) {
+                  <label class="choice-card" [class.selected]="$any(form().motor)[row.key] === sev.v">
+                    <input type="radio" [name]="row.key" [value]="sev.v"
+                           [checked]="$any(form().motor)[row.key] === sev.v"
+                           (change)="patchField('motor', row.key, sev.v)" />
+                    <span>{{ sev.l }}</span>
+                  </label>
+                }
+              </div>
+            </div>
+          }
+
+          <div>
+            <span class="field-label">Is the tremor or stiffness clearly worse on one side of the body?</span>
+            <div class="grid grid-cols-3 gap-2">
+              @for (opt of YES_NO_UNKNOWN; track opt.v) {
+                <label class="choice-card" [class.selected]="form().motor.tremorOneSided === opt.v">
+                  <input type="radio" name="oneSide" [value]="opt.v"
+                         [checked]="form().motor.tremorOneSided === opt.v"
+                         (change)="patch('motor', { tremorOneSided: opt.v })" />
+                  <span>{{ opt.l }}</span>
+                </label>
+              }
+            </div>
+          </div>
+
+          <div>
+            <span class="field-label">Supporting signs you or others have noticed (check all that apply)</span>
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              @for (row of MOTOR_SUPPORTING; track row.key) {
+                <label class="choice-card" [class.selected]="$any(form().motor)[row.key] === 'yes'">
+                  <input type="checkbox"
+                         [checked]="$any(form().motor)[row.key] === 'yes'"
+                         (change)="patchField('motor', row.key, isChecked($event) ? 'yes' : 'no')" />
+                  <span>{{ row.l }}</span>
+                </label>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (currentStep().key === 'nonMotor') {
+        <p class="mb-4 text-sm text-slate-600">
+          Non-motor symptoms can precede Parkinson's motor signs by 5–15 years and are valuable context for multi-omics analysis.
+        </p>
+        <div class="space-y-5">
+          <div>
+            <span class="field-label">Reduced sense of smell</span>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              @for (sev of SEVERITY_OPTS; track sev.v) {
+                <label class="choice-card" [class.selected]="form().nonMotor.smellLoss === sev.v">
+                  <input type="radio" name="smell" [value]="sev.v"
+                         [checked]="form().nonMotor.smellLoss === sev.v"
+                         (change)="patch('nonMotor', { smellLoss: sev.v })" />
+                  <span>{{ sev.l }}</span>
+                </label>
+              }
+            </div>
+          </div>
+
+          <div>
+            <span class="field-label">Do you physically act out your dreams (kick, punch, yell while asleep)?</span>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-5">
+              @for (f of RBD_FREQUENCY_OPTS; track f.v) {
+                <label class="choice-card" [class.selected]="form().nonMotor.sleepActingOutDreams === f.v">
+                  <input type="radio" name="rbd" [value]="f.v"
+                         [checked]="form().nonMotor.sleepActingOutDreams === f.v"
+                         (change)="patch('nonMotor', { sleepActingOutDreams: f.v })" />
+                  <span>{{ f.l }}</span>
+                </label>
+              }
+            </div>
+          </div>
+
+          <div>
+            <span class="field-label">Constipation frequency</span>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-5">
+              @for (f of FREQUENCY_OPTS; track f.v) {
+                <label class="choice-card" [class.selected]="form().nonMotor.constipation === f.v">
+                  <input type="radio" name="const" [value]="f.v"
+                         [checked]="form().nonMotor.constipation === f.v"
+                         (change)="patch('nonMotor', { constipation: f.v })" />
+                  <span>{{ f.l }}</span>
+                </label>
+              }
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <span class="field-label">Mood changes (low mood, apathy)</span>
+              <div class="grid grid-cols-4 gap-2">
+                @for (sev of SEVERITY_OPTS_SHORT; track sev.v) {
+                  <label class="choice-card" [class.selected]="form().nonMotor.mood === sev.v">
+                    <input type="radio" name="mood" [value]="sev.v"
+                           [checked]="form().nonMotor.mood === sev.v"
+                           (change)="patch('nonMotor', { mood: sev.v })" />
+                    <span>{{ sev.l }}</span>
+                  </label>
+                }
+              </div>
+            </div>
+            <div>
+              <span class="field-label">Cognitive / memory changes</span>
+              <div class="grid grid-cols-4 gap-2">
+                @for (sev of SEVERITY_OPTS_SHORT; track sev.v) {
+                  <label class="choice-card" [class.selected]="form().nonMotor.cognitiveChanges === sev.v">
+                    <input type="radio" name="cog" [value]="sev.v"
+                           [checked]="form().nonMotor.cognitiveChanges === sev.v"
+                           (change)="patch('nonMotor', { cognitiveChanges: sev.v })" />
+                    <span>{{ sev.l }}</span>
+                  </label>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <span class="field-label">Lightheadedness when standing up</span>
+              <div class="grid grid-cols-3 gap-2">
+                @for (opt of YES_NO_SHORT; track opt.v) {
+                  <label class="choice-card" [class.selected]="form().nonMotor.orthostatic === opt.v">
+                    <input type="radio" name="ortho" [value]="opt.v"
+                           [checked]="form().nonMotor.orthostatic === opt.v"
+                           (change)="patch('nonMotor', { orthostatic: opt.v })" />
+                    <span>{{ opt.l }}</span>
+                  </label>
+                }
+              </div>
+            </div>
+            <div>
+              <span class="field-label">New urinary urgency or frequency</span>
+              <div class="grid grid-cols-3 gap-2">
+                @for (opt of YES_NO_SHORT; track opt.v) {
+                  <label class="choice-card" [class.selected]="form().nonMotor.urinaryUrgency === opt.v">
+                    <input type="radio" name="uri" [value]="opt.v"
+                           [checked]="form().nonMotor.urinaryUrgency === opt.v"
+                           (change)="patch('nonMotor', { urinaryUrgency: opt.v })" />
+                    <span>{{ opt.l }}</span>
+                  </label>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (currentStep().key === 'review') {
+        <div class="space-y-4">
+          <div>
+            <label class="field-label" for="narr">Anything else you'd like to note? <span class="text-slate-400">(optional)</span></label>
+            <textarea id="narr" [ngModel]="form().narrative" (ngModelChange)="setNarrative($event)"
+                      placeholder="Occupations, addresses, timelines, or symptoms not captured above."></textarea>
+          </div>
+
+          <div class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+            <div class="flex items-start gap-3">
+              <fa-icon [icon]="icons.warn" class="mt-0.5"></fa-icon>
+              <div>
+                <p class="font-semibold">No diagnosis is generated here</p>
+                <p class="mt-1">Your responses are compiled into a structured record. On submit you can download, copy, or print the record for downstream analysis alongside your omics data.</p>
+              </div>
+            </div>
+          </div>
+
+          <label class="flex items-start gap-3 rounded-lg border border-slate-300 bg-white p-4">
+            <input type="checkbox" class="mt-1 h-4 w-4 accent-brand-600"
+                   [checked]="form().consent"
+                   (change)="setConsent(isChecked($event))" />
+            <span class="text-sm text-slate-700">
+              I understand this form does not diagnose or score any condition and that I am
+              submitting these responses for personal use or for downstream clinical / research
+              review.
+            </span>
+          </label>
+        </div>
+      }
+
+      <div class="mt-8 flex items-center justify-between border-t border-slate-200 pt-6">
+        <button type="button" (click)="back()" [disabled]="stepIndex() === 0"
+                class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
+          <fa-icon [icon]="icons.back"></fa-icon>
+          Back
+        </button>
+
+        @if (currentStep().key !== 'review') {
+          <button type="button" (click)="next()"
+                  [disabled]="currentStep().key === 'contact' && !canProceedFromContact()"
+                  class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-40">
+            Next
+            <fa-icon [icon]="icons.next"></fa-icon>
+          </button>
+        } @else {
+          <button type="button" (click)="submit()" [disabled]="!canSubmit()"
+                  class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-40">
+            <fa-icon [icon]="icons.check"></fa-icon>
+            Package my responses
+          </button>
+        }
+      </div>
+    </section>
+
+    <p class="mt-6 text-center text-xs text-slate-500">
+      Nothing you type is transmitted to a server. All processing happens locally in your browser.
+    </p>
+  }
+</div>

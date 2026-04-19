@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #f0f7ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+  font-family: var(--font-sans);
+}
+
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="date"],
+select,
+textarea {
+  @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+input[type="date"]:focus,
+select:focus,
+textarea:focus {
+  @apply border-brand-500 outline-none ring-2 ring-brand-200;
+}
+
+textarea {
+  @apply min-h-[88px];
+}
+
+label.field-label {
+  @apply mb-1 block text-sm font-medium text-slate-700;
+}
+
+.choice-card {
+  @apply flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white
+         px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition;
+}
+.choice-card:hover {
+  @apply border-brand-400 bg-brand-50;
+}
+.choice-card input {
+  @apply h-4 w-4 accent-brand-600;
+}
+.choice-card.selected {
+  @apply border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-brand-200;
+}
+
+.risk-bar {
+  @apply h-3 w-full overflow-hidden rounded-full bg-slate-200;
+}
+.risk-bar > span {
+  @apply block h-full rounded-full transition-all;
+}

@@ -1,0 +1,157 @@
+// Pluma Parkinson's intake — submission storage + admin/RBAC.
+// Name and email are stripped client-side. The full ZIP is retained but
+// encrypted at rest along with markdown and sections. Encryption is AES-256-GCM
+// with a key derived from the ENCRYPTION_SECRET env var.
+//
+// Auth is stateless JWT (signed with JWT_SECRET), so there is no server-side
+// session table — tokens are self-contained and verified per request.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../server/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Submission {
+  id            String   @id @default(uuid())
+  // Short, user-facing capability token (CUID2). Returned to the submitter on
+  // create so they can later reference or ask a researcher to delete their
+  // record without exposing the internal uuid.
+  lookupCode    String   @unique
+  // Patient who owns this submission, if any. Null for anonymous submissions
+  // that haven't been claimed yet. Deleting the owner cascades to the record.
+  ownerId       String?
+  owner         User?    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  schemaVersion String
+  ageBand       String?
+  sexAtBirth    String?
+  zipCodeEnc    String?  // full ZIP, AES-256-GCM ciphertext (base64 envelope)
+  markdownEnc   String   // LLM-ready markdown, AES-256-GCM ciphertext
+  sectionsEnc   String   // sections JSON, AES-256-GCM ciphertext
+}
+
+model User {
+  id                 String                   @id @default(uuid())
+  email              String                   @unique
+  passwordHash       String                   // argon2id
+  role               String                   // 'root' | 'researcher' | 'patient'
+  confirmed          Boolean                  @default(false)
+  // Default `true` so pre-existing rows stay usable after the migration;
+  // signup handlers explicitly set this to `false` on new accounts.
+  emailVerified      Boolean                  @default(true)
+  mfaSecretEnc       String?                  // AES-256-GCM ciphertext of the base32 TOTP secret
+  mfaEnabled         Boolean                  @default(false)
+  createdAt          DateTime                 @default(now())
+  submissions        Submission[]
+  passwordResets     PasswordResetToken[]
+  verifications      EmailVerificationToken[]
+  mfaRecoveryCodes   MfaRecoveryCode[]
+  webauthnCredentials WebAuthnCredential[]
+  grantsFromPatient  RecordAccessGrant[]      @relation("PatientGrants")
+  grantsToResearcher RecordAccessGrant[]      @relation("ResearcherGrants")
+}
+
+// Registered WebAuthn credential — a passkey from Touch ID / Windows Hello /
+// a security key / another device. Used for passwordless sign-in by proving
+// possession of the credential (which is bound to platform-held biometrics).
+model WebAuthnCredential {
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // base64url rawId returned by the authenticator
+  credentialId  String    @unique
+  publicKey     String    // base64url COSE public key
+  counter       Int       @default(0)
+  transports    String?   // comma-separated: "usb,ble,nfc,internal,hybrid"
+  deviceType    String?   // "singleDevice" | "multiDevice"
+  backedUp      Boolean   @default(false)
+  nickname      String?
+  createdAt     DateTime  @default(now())
+  lastUsedAt    DateTime?
+
+  @@index([userId, createdAt])
+}
+
+// Single-use backup passcodes the user can redeem in lieu of a TOTP code
+// during the MFA challenge. Generated at MFA enrollment time, displayed once,
+// and stored only as sha256 hashes.
+model MfaRecoveryCode {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([userId, codeHash])
+  @@index([userId, usedAt])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Only the sha256 hash of the 6-digit code is persisted.
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, usedAt])
+}
+
+model PasswordResetToken {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Only the sha256 hash of the token lives in the DB — the plaintext token
+  // goes to the user out-of-band, so a DB read leaks no usable tokens.
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, usedAt])
+}
+
+// Explicit, patient-issued authorization for a specific researcher to see
+// that patient's records. Root has implicit access; researchers only see
+// records they've been granted.
+model RecordAccessGrant {
+  id           String    @id @default(uuid())
+  patientId    String
+  patient      User      @relation("PatientGrants", fields: [patientId], references: [id], onDelete: Cascade)
+  researcherId String
+  researcher   User      @relation("ResearcherGrants", fields: [researcherId], references: [id], onDelete: Cascade)
+  grantedAt    DateTime  @default(now())
+  revokedAt    DateTime?
+
+  @@unique([patientId, researcherId])
+  @@index([researcherId, revokedAt])
+}
+
+// HIPAA § 164.312(b) audit controls. Every PHI access (submission view/edit/
+// delete, login success/failure, user admin action, account delete) writes one
+// row here so an investigator can reconstruct who did what to which record.
+model AuditLog {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  action      String   // e.g. 'login', 'login_failed', 'submission_view'
+  actorId     String?  // null for pre-auth events (e.g. login attempts on unknown emails)
+  actorEmail  String?
+  actorRole   String?
+  targetType  String?  // 'user' | 'submission' | 'email' | null
+  targetId    String?
+  success     Boolean  @default(true)
+  ip          String?
+  userAgent   String?
+  metadata    String?  // free-form JSON
+
+  @@index([actorId, createdAt])
+  @@index([targetType, targetId, createdAt])
+  @@index([action, createdAt])
+}

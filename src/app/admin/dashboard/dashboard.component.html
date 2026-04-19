@@ -1,0 +1,220 @@
+<div class="min-h-screen bg-slate-50">
+  <header class="border-b border-slate-200 bg-white">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Pluma admin</p>
+        <p class="text-sm font-medium text-slate-800">
+          {{ user()?.email }}
+          <span class="ml-2 inline-flex items-center rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-700">
+            {{ user()?.role }}
+          </span>
+        </p>
+      </div>
+      <button type="button" (click)="logout()"
+              class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+        Sign out
+      </button>
+    </div>
+  </header>
+
+  @if (!confirmed()) {
+    <div class="mx-auto max-w-3xl px-4 py-16">
+      <div class="rounded-2xl border border-amber-300 bg-amber-50 p-6 text-sm text-amber-900">
+        <h2 class="text-lg font-semibold">Awaiting approval</h2>
+        <p class="mt-2">
+          Your researcher account has been created but is not yet confirmed by the root admin.
+          You'll have access to submissions as soon as they approve you.
+        </p>
+      </div>
+    </div>
+  } @else {
+    <nav class="border-b border-slate-200 bg-white">
+      <div class="mx-auto flex max-w-6xl gap-4 px-4">
+        <button type="button" (click)="switchTab('records')"
+                class="border-b-2 px-1 py-3 text-sm font-medium"
+                [class.border-brand-600]="tab() === 'records'"
+                [class.text-brand-700]="tab() === 'records'"
+                [class.border-transparent]="tab() !== 'records'"
+                [class.text-slate-600]="tab() !== 'records'">
+          Records
+        </button>
+        @if (isRoot()) {
+          <button type="button" (click)="switchTab('users')"
+                  class="border-b-2 px-1 py-3 text-sm font-medium"
+                  [class.border-brand-600]="tab() === 'users'"
+                  [class.text-brand-700]="tab() === 'users'"
+                  [class.border-transparent]="tab() !== 'users'"
+                  [class.text-slate-600]="tab() !== 'users'">
+            Users
+          </button>
+        }
+      </div>
+    </nav>
+
+    <main class="mx-auto max-w-6xl px-4 py-6">
+
+      @if (tab() === 'records') {
+        <section class="space-y-4">
+          <div class="flex items-center justify-between gap-4">
+            <h2 class="text-xl font-semibold text-slate-900">Submissions</h2>
+            <button type="button" (click)="refreshSubmissions()" [disabled]="recordsLoading()"
+                    class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50">
+              {{ recordsLoading() ? 'Loading…' : 'Refresh' }}
+            </button>
+          </div>
+
+          <form class="flex gap-2" (submit)="$event.preventDefault(); lookupByCode()">
+            <input type="text" placeholder="Paste submitter's lookup code" name="lookup"
+                   [ngModel]="lookupInput()" (ngModelChange)="lookupInput.set($event)"
+                   class="flex-1" />
+            <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">
+              Look up
+            </button>
+          </form>
+
+          @if (recordsError(); as e) {
+            <div class="rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900">{{ e }}</div>
+          }
+
+          <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <table class="min-w-full divide-y divide-slate-200">
+              <thead class="bg-slate-50">
+                <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  <th class="px-4 py-2">Lookup code</th>
+                  <th class="px-4 py-2">Created</th>
+                  <th class="px-4 py-2">Age band</th>
+                  <th class="px-4 py-2">Sex at birth</th>
+                  <th class="px-4 py-2 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-sm">
+                @for (s of submissions(); track s.id) {
+                  <tr>
+                    <td class="px-4 py-2 font-mono text-xs text-slate-700">{{ s.lookupCode }}</td>
+                    <td class="px-4 py-2 text-slate-700">{{ s.createdAt | date: 'medium' }}</td>
+                    <td class="px-4 py-2 text-slate-700">{{ s.ageBand ?? '—' }}</td>
+                    <td class="px-4 py-2 text-slate-700">{{ s.sexAtBirth ?? '—' }}</td>
+                    <td class="px-4 py-2 text-right">
+                      <button type="button" (click)="viewSubmission(s.id)"
+                              class="mr-2 text-sm font-medium text-brand-700 hover:underline">
+                        View
+                      </button>
+                      <button type="button" (click)="deleteSubmission(s.id)"
+                              class="text-sm font-medium text-rose-700 hover:underline">
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="px-4 py-8 text-center text-sm text-slate-500">
+                      No submissions yet.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          @if (selected(); as s) {
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div class="mb-4 flex items-start justify-between gap-4">
+                <div>
+                  <h3 class="text-lg font-semibold text-slate-900">Submission detail</h3>
+                  <p class="text-xs text-slate-500">
+                    Lookup code <code class="font-mono">{{ s.lookupCode }}</code> · {{ s.createdAt | date: 'medium' }}
+                  </p>
+                </div>
+                <div class="flex gap-2">
+                  <button type="button" (click)="downloadSelectedMarkdown()"
+                          class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+                    Download markdown
+                  </button>
+                  <button type="button" (click)="deleteSubmission(s.id)"
+                          class="rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 shadow-sm hover:bg-rose-50">
+                    Delete
+                  </button>
+                  <button type="button" (click)="closeSelected()"
+                          class="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-500 hover:bg-slate-100">
+                    Close
+                  </button>
+                </div>
+              </div>
+
+              <dl class="grid gap-3 text-sm sm:grid-cols-3">
+                <div><dt class="text-xs font-semibold uppercase text-slate-500">Age band</dt><dd class="text-slate-800">{{ s.ageBand ?? '—' }}</dd></div>
+                <div><dt class="text-xs font-semibold uppercase text-slate-500">Sex at birth</dt><dd class="text-slate-800">{{ s.sexAtBirth ?? '—' }}</dd></div>
+                <div><dt class="text-xs font-semibold uppercase text-slate-500">ZIP</dt><dd class="text-slate-800">{{ s.zipCode ?? '—' }}</dd></div>
+              </dl>
+
+              <h4 class="mt-4 text-sm font-semibold text-slate-800">Markdown</h4>
+              <pre class="mt-2 max-h-96 overflow-auto rounded-lg bg-slate-900 p-4 text-xs leading-relaxed text-slate-100">{{ s.markdown }}</pre>
+            </div>
+          }
+        </section>
+      }
+
+      @if (tab() === 'users' && isRoot()) {
+        <section class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold text-slate-900">Users</h2>
+            <button type="button" (click)="refreshUsers()" [disabled]="usersLoading()"
+                    class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50">
+              {{ usersLoading() ? 'Loading…' : 'Refresh' }}
+            </button>
+          </div>
+
+          @if (usersError(); as e) {
+            <div class="rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900">{{ e }}</div>
+          }
+
+          <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <table class="min-w-full divide-y divide-slate-200">
+              <thead class="bg-slate-50">
+                <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  <th class="px-4 py-2">Email</th>
+                  <th class="px-4 py-2">Role</th>
+                  <th class="px-4 py-2">Status</th>
+                  <th class="px-4 py-2 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-sm">
+                @for (u of users(); track u.id) {
+                  <tr>
+                    <td class="px-4 py-2 text-slate-700">{{ u.email }}</td>
+                    <td class="px-4 py-2 text-slate-700">{{ u.role }}</td>
+                    <td class="px-4 py-2">
+                      @if (u.confirmed) {
+                        <span class="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">Confirmed</span>
+                      } @else {
+                        <span class="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Pending</span>
+                      }
+                    </td>
+                    <td class="px-4 py-2 text-right">
+                      @if (!u.confirmed && u.role !== 'root') {
+                        <button type="button" (click)="confirmUser(u.id)"
+                                class="mr-2 text-sm font-medium text-emerald-700 hover:underline">
+                          Confirm
+                        </button>
+                      }
+                      @if (u.role !== 'root' && u.id !== user()?.id) {
+                        <button type="button" (click)="deleteUser(u.id, u.email)"
+                                class="text-sm font-medium text-rose-700 hover:underline">
+                          Delete
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="4" class="px-4 py-8 text-center text-sm text-slate-500">No users.</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
+      <app-mfa-settings></app-mfa-settings>
+      <app-passkey-settings></app-passkey-settings>
+    </main>
+  }
+</div>
