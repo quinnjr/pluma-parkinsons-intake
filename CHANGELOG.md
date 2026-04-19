@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] — 2026-04-19
+
+### Added
+
+- **Terms of Use** (`/terms`) and **Privacy Policy** (`/privacy`) pages emphasizing HIPAA compliance — PHI handling, encryption, audit controls, access model, patient data rights, breach notification, BAA requirements, governing law (State of Florida).
+- Footer links to Terms and Privacy on intake form, login, and both signup pages. Signup pages include consent-by-use notice.
+
+### Changed
+
+- Docker base image switched from `node:22-slim` (Debian) to `node:22-alpine`. Native module compilation handled in the build stage; runtime stays minimal Alpine (~120 MB vs ~250 MB).
+- Migrated QR code generation from `qrcode` (CommonJS) to `@quinnjr/qrcode-esm` (native ESM + bundled types). Removed `@types/qrcode` dev dependency and the `qrcode` CJS allowlist entry from `angular.json`.
+
+### Fixed
+
+- Removed stale "Nothing you type is transmitted to a server" copy from the intake form footer.
+
 ## [0.1.1] — 2026-04-19
 
 ### Changed
