@@ -1,5 +1,5 @@
 import { Secret, TOTP } from 'otpauth';
-import QRCode from 'qrcode';
+import { toDataURL } from '@quinnjr/qrcode-esm';
 
 const MFA_ISSUER = 'Pluma';
 
@@ -23,7 +23,7 @@ export function otpauthUrl(secret: string, label: string): string {
 }
 
 export async function qrDataUrl(otpauth: string): Promise<string> {
-  return QRCode.toDataURL(otpauth, { margin: 1, width: 220 });
+  return toDataURL(otpauth, { margin: 1, width: 220 });
 }
 
 // Accept one period of clock skew on either side.

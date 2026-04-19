@@ -40,7 +40,6 @@
             ],
             "allowedCommonJsDependencies": [
               "dotenv/config",
-              "qrcode",
               "reflect-metadata"
             ],
             "subresourceIntegrity": true

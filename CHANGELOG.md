@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] — 2026-04-19
+
+### Changed
+
+- Migrated QR code generation from `qrcode` (CommonJS) to `@quinnjr/qrcode-esm` (native ESM + bundled types). Removed `@types/qrcode` dev dependency and the `qrcode` CJS allowlist entry from `angular.json`.
+
 ## [0.1.0] — 2026-04-19
 
 ### Added
