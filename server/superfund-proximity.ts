@@ -80,8 +80,8 @@ export async function nearbySites(
       contaminants: s.contaminants,
       distanceMiles: haversineMiles(centroid.latitude, centroid.longitude, s.latitude, s.longitude),
     }))
-    .filter((s) => s.distanceMiles <= radiusMiles)
-    .toSorted((a, b) => a.distanceMiles - b.distanceMiles);
+    .filter((s) => s.distanceMiles <= radiusMiles);
+  within.sort((a, b) => a.distanceMiles - b.distanceMiles);
 
   return within;
 }
