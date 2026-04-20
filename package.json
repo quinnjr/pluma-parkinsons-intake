@@ -38,6 +38,7 @@
     "@tailwindcss/postcss": "^4.2.2",
     "argon2": "^0.44.0",
     "better-sqlite3": "^12.9.0",
+    "csv-parse": "^6.2.1",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "helmet": "^8.1.0",
