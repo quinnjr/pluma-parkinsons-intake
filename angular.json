@@ -100,6 +100,7 @@
           "options": {
             "buildTarget": "pluma-parkinsons-intake:build:development",
             "runner": "vitest",
+            "setupFiles": ["src/test-setup.ts"],
             "include": ["src/**/*.spec.ts"],
             "coverageInclude": [
               "src/server/**/*.ts",
