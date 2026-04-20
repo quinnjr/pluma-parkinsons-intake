@@ -28,10 +28,15 @@ export class SuperfundService {
 
   async loadStates(): Promise<void> {
     if (this.statesCache() !== null) return;
-    const res = await this.api.get<{ ok: true; states: SuperfundStateInfo[] }>(
-      '/api/superfund/states',
-    );
-    this.statesCache.set(res.states);
+    try {
+      const res = await this.api.get<{ ok: true; states: SuperfundStateInfo[] }>(
+        '/api/superfund/states',
+      );
+      this.statesCache.set(res.states);
+    } catch (err) {
+      console.error('[superfund.service] loadStates failed', err);
+      this.statesCache.set([]);
+    }
   }
 
   sites(state: string): Signal<SuperfundSite[] | null> {
