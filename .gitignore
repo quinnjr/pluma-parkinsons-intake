@@ -62,9 +62,8 @@ Thumbs.db
 ehthumbs.db
 desktop.ini
 
-# Prisma generated clients
-/src/generated/prisma
-/server/generated/prisma
+# Prisma generated client
+/src/prisma
 
 # Secrets & environment
 .env

@@ -1,5 +1,5 @@
 import type { Request } from 'express';
-import type { PrismaClient } from './generated/prisma/client.js';
+import type { PrismaClient } from '../src/prisma/client.js';
 
 export type AuditAction =
   | 'login'

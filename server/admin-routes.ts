@@ -1,6 +1,6 @@
 import { Router, type Request, type Response, type RequestHandler } from 'express';
 import { z } from 'zod';
-import type { PrismaClient } from './generated/prisma/client.js';
+import type { PrismaClient } from '../src/prisma/client.js';
 import type { CryptoService } from './crypto.js';
 import {
   COOKIE_NAME,

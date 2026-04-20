@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { createId } from '@paralleldrive/cuid2';
 import bootstrap from './main.server.js';
-import { PrismaClient } from '../server/generated/prisma/client.js';
+import { PrismaClient } from './prisma/client.js';
 import { validateAndSanitize } from '../server/anonymize.js';
 import { cryptoFromEnv } from '../server/crypto.js';
 import { adminRouter, makeLoadAuth } from '../server/admin-routes.js';

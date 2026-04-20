@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import { PrismaClient } from '../server/generated/prisma/client.js';
+import { PrismaClient } from '../src/prisma/client.js';
 import { seedSuperfundForce } from '../server/superfund-importer.js';
 
 async function main() {
