@@ -25,8 +25,10 @@ import {
   faTriangleExclamation,
   faUser,
 } from '../icons';
-import { EMPTY_INTAKE, IntakeForm, IntakePayload } from '../risk/risk.model';
+import { EMPTY_INTAKE, EnvironmentalExposure, IntakeForm, IntakePayload } from '../risk/risk.model';
 import { IntakePayloadService } from '../risk/risk.service';
+import { SuperfundService, type SuperfundStateInfo } from '../shared/superfund.service';
+import { StateResidencyComponent } from './state-residency/state-residency.component';
 import { SubmissionReviewComponent } from '../submission-review/submission-review.component';
 
 type StepKey = 'contact' | 'demographics' | 'environmental' | 'lifestyle' | 'motor' | 'nonMotor' | 'review';
@@ -115,16 +117,35 @@ const SUPERFUND_OPTS: readonly Option[] = [
   { v: 'unknown', l: 'Not sure' },
 ];
 
+const STATE_NAMES: Record<string, string> = {
+  AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California',
+  CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware', DC: 'District of Columbia',
+  FL: 'Florida', GA: 'Georgia', HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois',
+  IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana',
+  ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota',
+  MS: 'Mississippi', MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada',
+  NH: 'New Hampshire', NJ: 'New Jersey', NM: 'New Mexico', NY: 'New York',
+  NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma', OR: 'Oregon',
+  PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina', SD: 'South Dakota',
+  TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia',
+  WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
+  PR: 'Puerto Rico', GU: 'Guam', VI: 'U.S. Virgin Islands',
+  AS: 'American Samoa', MP: 'Northern Mariana Islands',
+};
+
 @Component({
   selector: 'app-intake-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, FaIconComponent, SubmissionReviewComponent],
+  imports: [CommonModule, FormsModule, RouterLink, FaIconComponent, StateResidencyComponent, SubmissionReviewComponent],
   templateUrl: './intake-form.component.html',
 })
 export class IntakeFormComponent {
   private payloads = inject(IntakePayloadService);
   private auth = inject(AuthService);
   private router = inject(Router);
+  private superfund = inject(SuperfundService);
+
+  superfundStates = signal<SuperfundStateInfo[]>([]);
 
   readonly authReady = this.auth.ready;
   readonly currentUser = this.auth.user;
@@ -140,6 +161,10 @@ export class IntakeFormComponent {
   constructor() {
     afterNextRender(() => {
       if (!this.auth.ready()) void this.auth.loadMe();
+    });
+    afterNextRender(async () => {
+      await this.superfund.loadStates();
+      this.superfundStates.set(this.superfund.states() ?? []);
     });
   }
 
@@ -278,6 +303,54 @@ export class IntakeFormComponent {
         specificChemicals: { ...f.environmental.specificChemicals, ...update },
       },
     }));
+  }
+
+  private updateEnv(patch: Partial<EnvironmentalExposure>): void {
+    this.form.update((f) => ({
+      ...f,
+      environmental: { ...f.environmental, ...patch },
+    }));
+  }
+
+  stateNameFor(code: string): string {
+    return STATE_NAMES[code] ?? code;
+  }
+
+  isStateSelected(code: string): boolean {
+    return this.form().environmental.livedInStates.some((s) => s.state === code);
+  }
+
+  toggleState(code: string, checked: boolean): void {
+    const current = this.form().environmental.livedInStates;
+    if (checked && !current.some((s) => s.state === code)) {
+      this.updateEnv({
+        livedInStates: [...current, { state: code, livedYears: null, nearSiteIds: [] }],
+      });
+    } else if (!checked) {
+      this.updateEnv({ livedInStates: current.filter((s) => s.state !== code) });
+    }
+  }
+
+  removeState(code: string): void {
+    this.updateEnv({
+      livedInStates: this.form().environmental.livedInStates.filter((s) => s.state !== code),
+    });
+  }
+
+  updateStateLivedYears(code: string, years: number | null): void {
+    this.updateEnv({
+      livedInStates: this.form().environmental.livedInStates.map((s) =>
+        s.state === code ? { ...s, livedYears: years } : s,
+      ),
+    });
+  }
+
+  updateStateSiteIds(code: string, ids: string[]): void {
+    this.updateEnv({
+      livedInStates: this.form().environmental.livedInStates.map((s) =>
+        s.state === code ? { ...s, nearSiteIds: ids } : s,
+      ),
+    });
   }
 
   patchDiagnoses(update: Partial<IntakeForm['lifestyle']['priorDiagnoses']>): void {

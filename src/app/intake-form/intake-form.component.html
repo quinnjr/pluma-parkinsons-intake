@@ -33,6 +33,7 @@
   } @else if (submitted() && payload(); as p) {
     <app-submission-review
       [payload]="p"
+      [livedInStates]="form().environmental.livedInStates"
       (startOver)="startOver()"></app-submission-review>
   } @else {
     <div class="mb-4 flex items-center justify-between text-xs text-slate-500">
@@ -392,6 +393,45 @@
                 </div>
               </div>
             </div>
+
+            <fieldset class="mt-6 border-t border-slate-200 pt-4">
+              <legend class="text-base font-semibold">States you've lived in (past or present)</legend>
+              <p class="mt-1 text-sm text-slate-600">
+                Select any U.S. state or territory where you've lived. You'll then be able to mark
+                specific Superfund sites in that state if you lived near any of them.
+              </p>
+
+              <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                @for (s of superfundStates(); track s.state) {
+                  <label class="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      [checked]="isStateSelected(s.state)"
+                      (change)="toggleState(s.state, $any($event.target).checked)"
+                    />
+                    <span>{{ stateNameFor(s.state) }} <span class="text-xs text-slate-500">({{ s.siteCount }})</span></span>
+                  </label>
+                }
+              </div>
+
+              @if (form().environmental.livedInStates.length === 0) {
+                <p class="mt-4 text-sm text-slate-500">Select one or more states above to browse Superfund sites.</p>
+              }
+
+              <div class="mt-4 space-y-4">
+                @for (residency of form().environmental.livedInStates; track residency.state) {
+                  <app-state-residency
+                    [state]="residency.state"
+                    [stateName]="stateNameFor(residency.state)"
+                    [livedYears]="residency.livedYears"
+                    [nearSiteIds]="residency.nearSiteIds"
+                    (livedYearsChange)="updateStateLivedYears(residency.state, $event)"
+                    (nearSiteIdsChange)="updateStateSiteIds(residency.state, $event)"
+                    (removed)="removeState(residency.state)"
+                  />
+                }
+              </div>
+            </fieldset>
           </fieldset>
 
           <fieldset class="rounded-xl border border-slate-200 bg-slate-50/60 p-5">

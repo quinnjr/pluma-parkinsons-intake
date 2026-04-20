@@ -13,7 +13,7 @@ import {
   faRotateLeft,
   faTriangleExclamation,
 } from '../icons';
-import { AnonymizedPayload, IntakePayload, IntakeSection } from '../risk/risk.model';
+import { AnonymizedPayload, IntakePayload, IntakeSection, StateResidency } from '../risk/risk.model';
 import { IntakePayloadService } from '../risk/risk.service';
 import { SubmissionApiService } from '../risk/submission-api.service';
 
@@ -34,6 +34,7 @@ export class SubmissionReviewComponent {
   private api = inject(SubmissionApiService);
 
   readonly payload = input.required<IntakePayload>();
+  readonly livedInStates = input<StateResidency[]>([]);
   readonly startOver = output<void>();
 
   readonly icons = {
@@ -107,7 +108,7 @@ export class SubmissionReviewComponent {
     if (state.kind === 'saving' || state.kind === 'saved') return;
     this.saveState.set({ kind: 'saving' });
     try {
-      const result = await this.api.create(this.anonymized());
+      const result = await this.api.create(this.anonymized(), this.livedInStates());
       if (result.ok) {
         this.saveState.set({
           kind: 'saved',

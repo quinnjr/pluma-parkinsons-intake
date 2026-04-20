@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { AnonymizedPayload } from './risk.model';
+import { AnonymizedPayload, StateResidency } from './risk.model';
 
 export interface SubmissionCreated {
   ok: true;
@@ -19,9 +19,13 @@ export interface SubmissionError {
 export class SubmissionApiService {
   private http = inject(HttpClient);
 
-  async create(payload: AnonymizedPayload): Promise<SubmissionCreated | SubmissionError> {
+  async create(
+    payload: AnonymizedPayload,
+    livedInStates: StateResidency[] = [],
+  ): Promise<SubmissionCreated | SubmissionError> {
+    const body = { ...payload, livedInStates };
     return firstValueFrom(
-      this.http.post<SubmissionCreated | SubmissionError>('/api/submissions', payload),
+      this.http.post<SubmissionCreated | SubmissionError>('/api/submissions', body),
     );
   }
 }
