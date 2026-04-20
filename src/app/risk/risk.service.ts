@@ -15,7 +15,7 @@ import {
   YesNoUnknown,
 } from './risk.model';
 
-const SCHEMA_VERSION = '1.0.0';
+const SCHEMA_VERSION = '1.1.0';
 
 const YES_NO_LABELS: Record<YesNoUnknown | '', string> = {
   yes: 'Yes',
@@ -56,6 +56,7 @@ export class IntakePayloadService {
         this.nonMotorSection(form.nonMotor),
         this.narrativeSection(form.narrative),
       ],
+      livedInStates: form.environmental.livedInStates,
     };
   }
 
@@ -68,6 +69,7 @@ export class IntakePayloadService {
       ageBand: demoValue(demo, 'ageBand'),
       sexAtBirth: demoValue(demo, 'sexAtBirth'),
       sections: payload.sections,
+      livedInStates: payload.livedInStates,
     };
     return { ...core, markdown: this.toMarkdown(core) };
   }

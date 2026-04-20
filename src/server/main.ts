@@ -10,13 +10,23 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { createId } from '@paralleldrive/cuid2';
-import bootstrap from './main.server.js';
-import { PrismaClient } from '../server/generated/prisma/client.js';
-import { validateAndSanitize } from '../server/anonymize.js';
-import { cryptoFromEnv } from '../server/crypto.js';
-import { adminRouter, makeLoadAuth } from '../server/admin-routes.js';
-import { requireRole } from '../server/auth.js';
-import { audit } from '../server/audit.js';
+import bootstrap from '../main.server.js';
+import { PrismaClient } from '../prisma/client.js';
+import { validateAndSanitize } from './anonymize.js';
+import { cryptoFromEnv } from './crypto.js';
+import { adminRouter, makeLoadAuth } from './admin-routes.js';
+import { requireRole } from './auth.js';
+import { audit } from './audit.js';
+import { seedSuperfundIfEmpty } from './superfund-importer.js';
+import { nearbySites } from './superfund-proximity.js';
+import {
+  buildHistoricalMarkdown,
+  buildHistoricalSection,
+  buildProximityMarkdown,
+  buildProximitySection,
+  type HistoricalStateEntry,
+} from './superfund-emission.js';
+import { US_STATE_NAMES } from '../app/shared/us-states.js';
 
 const serverDistFolder = path.dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = path.resolve(serverDistFolder, '../browser');
@@ -28,6 +38,14 @@ const indexHtmlTemplate = readFileSync(
 const databaseUrl = process.env['DATABASE_URL'] ?? 'file:./dev.db';
 const adapter = new PrismaBetterSqlite3({ url: databaseUrl });
 const prisma = new PrismaClient({ adapter });
+
+// Kick off async Superfund/ZIP reference-data seeding on boot. Non-blocking —
+// the app starts immediately; seeding logs progress. Endpoints that query
+// these tables handle the "still seeding" window by returning an empty list.
+void seedSuperfundIfEmpty(prisma).catch((err) => {
+  console.error('[superfund] auto-seed failed:', err);
+});
+
 const crypto = cryptoFromEnv();
 
 const PERMISSIONS_POLICY = [
@@ -158,6 +176,68 @@ app.post('/api/submissions', requireRole('patient'), async (req, res) => {
     return;
   }
   const s = result.sanitized;
+
+  const allSiteIds = s.livedInStates.flatMap((st) => st.nearSiteIds);
+  const [proximity, historicalSiteRows] = await Promise.all([
+    s.zipCode ? nearbySites(prisma, s.zipCode.slice(0, 5)) : null,
+    allSiteIds.length > 0
+      ? prisma.superfundSite.findMany({
+          where: { id: { in: allSiteIds } },
+          select: {
+            id: true, epaId: true, name: true, city: true, county: true,
+            status: true, contaminants: true,
+          },
+        })
+      : [],
+  ]);
+
+  let proximityMarkdown = '';
+  let proximitySection: ReturnType<typeof buildProximitySection> | null = null;
+  if (s.zipCode && proximity) {
+    const input = {
+      zipCode: s.zipCode,
+      zipCentroidFound: proximity.found,
+      sites: proximity.sites,
+    };
+    proximityMarkdown = buildProximityMarkdown(input);
+    proximitySection = buildProximitySection(input);
+  }
+
+  const byId = new Map(historicalSiteRows.map((row) => [row.id, row]));
+  const historicalInput: HistoricalStateEntry[] = s.livedInStates.map((st) => ({
+    state: st.state,
+    stateName: US_STATE_NAMES[st.state] ?? st.state,
+    livedYears: st.livedYears,
+    sites: st.nearSiteIds
+      .map((id) => byId.get(id))
+      .filter((r): r is NonNullable<typeof r> => r !== undefined)
+      .map((r) => ({
+        epaId: r.epaId,
+        name: r.name,
+        city: r.city,
+        county: r.county,
+        status: r.status,
+        contaminants: r.contaminants,
+      })),
+  }));
+  const historicalMarkdown = buildHistoricalMarkdown(historicalInput);
+  const historicalSection = buildHistoricalSection(historicalInput);
+
+  const extraMarkdownChunks = [proximityMarkdown, historicalMarkdown].filter(Boolean);
+  const markdown = extraMarkdownChunks.length > 0
+    ? `${s.markdown}\n\n${extraMarkdownChunks.join('\n\n')}`
+    : s.markdown;
+
+  const sections = [
+    ...s.sections,
+    ...(proximitySection
+      ? [{ id: 'environmental.superfundProximity.auto', data: proximitySection }]
+      : []),
+    ...(historicalSection.length > 0
+      ? [{ id: 'environmental.superfundHistorical', data: historicalSection }]
+      : []),
+  ];
+
   const created = await prisma.submission.create({
     data: {
       lookupCode: createId(),
@@ -165,8 +245,8 @@ app.post('/api/submissions', requireRole('patient'), async (req, res) => {
       ageBand: s.ageBand,
       sexAtBirth: s.sexAtBirth,
       zipCodeEnc: s.zipCode ? crypto.encrypt(s.zipCode) : null,
-      markdownEnc: crypto.encrypt(s.markdown),
-      sectionsEnc: crypto.encrypt(JSON.stringify(s.sections)),
+      markdownEnc: crypto.encrypt(markdown),
+      sectionsEnc: crypto.encrypt(JSON.stringify(sections)),
       owner: { connect: { id: req.auth!.sub } },
     },
     select: { id: true, lookupCode: true, createdAt: true },

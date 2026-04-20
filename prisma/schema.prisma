@@ -8,7 +8,7 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../server/generated/prisma"
+  output   = "../src/prisma"
 }
 
 datasource db {
@@ -154,4 +154,41 @@ model AuditLog {
   @@index([actorId, createdAt])
   @@index([targetType, targetId, createdAt])
   @@index([action, createdAt])
+}
+
+// EPA National Priorities List (Superfund) site reference data.
+// Public (non-PHI). Seeded from prisma/data/superfund-sites.csv via
+// scripts/seed-superfund.ts. Not scoped to users.
+model SuperfundSite {
+  id           String    @id @default(uuid())
+  epaId        String    @unique
+  name         String
+  city         String?
+  county       String?
+  state        String
+  zipCode      String?
+  latitude     Float
+  longitude    Float
+  status       String    // 'final' | 'proposed' | 'deleted' | 'partial-deletion'
+  listedOn     DateTime?
+  deletedOn    DateTime?
+  contaminants String?   // comma-separated best-effort list
+  epaUrl       String?
+  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime  @default(now())
+
+  @@index([state, name])
+  @@index([latitude, longitude])
+}
+
+// U.S. Census 2020 ZCTA Gazetteer snapshot. Public reference data;
+// used for ZIP-centroid distance computation against SuperfundSite.
+model ZipCentroid {
+  zipCode   String  @id
+  latitude  Float
+  longitude Float
+  // Nullable because ~1,890 rows in the scpike community ZCTA crosswalk lack a
+  // STATE_USPS — territorial ZCTAs (PR, VI, etc.) the crosswalk doesn't cover.
+  // The proximity helper matches on latitude/longitude; `state` is informational.
+  state     String?
 }

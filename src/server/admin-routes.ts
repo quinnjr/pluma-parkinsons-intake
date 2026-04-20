@@ -1,6 +1,6 @@
 import { Router, type Request, type Response, type RequestHandler } from 'express';
 import { z } from 'zod';
-import type { PrismaClient } from './generated/prisma/client.js';
+import type { PrismaClient } from '../prisma/client.js';
 import type { CryptoService } from './crypto.js';
 import {
   COOKIE_NAME,
@@ -788,6 +788,46 @@ export function adminRouter(prisma: PrismaClient, crypto: CryptoService): Router
       targetId: actorId,
     });
     res.json({ ok: true });
+  });
+
+  // --- Superfund reference data (public EPA data, auth-gated, not audited) ---
+
+  router.get('/api/superfund/states', requireAuth, async (_req, res) => {
+    const rows = await prisma.superfundSite.groupBy({
+      by: ['state'],
+      _count: { _all: true },
+      orderBy: { state: 'asc' },
+    });
+    const states = rows.map((r) => ({ state: r.state, siteCount: r._count._all }));
+    res.json({ ok: true, states });
+  });
+
+  const stateQuerySchema = z.object({
+    state: z.string().regex(/^[A-Z]{2}$/, 'must be 2 uppercase letters'),
+  });
+
+  router.get('/api/superfund/sites', requireAuth, async (req, res) => {
+    const parsed = stateQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ ok: false, errors: issuesToErrors(parsed.error.issues) });
+      return;
+    }
+    const sites = await prisma.superfundSite.findMany({
+      where: { state: parsed.data.state },
+      select: {
+        id: true,
+        epaId: true,
+        name: true,
+        city: true,
+        county: true,
+        zipCode: true,
+        status: true,
+        contaminants: true,
+        epaUrl: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+    res.json({ ok: true, sites });
   });
 
   // ---------- Submissions: staff (root + researcher) ----------

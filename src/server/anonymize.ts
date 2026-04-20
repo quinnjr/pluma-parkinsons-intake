@@ -27,6 +27,12 @@ export function checkPiiKeys(body: unknown): ValidationError[] {
   return out;
 }
 
+const stateResidencySchema = z.object({
+  state: z.string().regex(/^[A-Z]{2}$/),
+  livedYears: z.number().int().min(0).max(120).nullable(),
+  nearSiteIds: z.array(z.string().uuid()).max(500),
+});
+
 const submissionSchema = z.object({
   schemaVersion: z.string().min(1, 'missing'),
   generatedAt: z.string().min(1, 'missing'),
@@ -38,6 +44,7 @@ const submissionSchema = z.object({
     .min(1, 'missing')
     .refine((v) => !EMAIL_RE.test(v), { message: 'contains an email address' }),
   sections: z.array(z.unknown()),
+  livedInStates: z.array(stateResidencySchema).max(55).default([]),
 });
 
 export type IncomingPayload = z.output<typeof submissionSchema>;
