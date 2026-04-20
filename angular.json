@@ -19,7 +19,7 @@
             "browser": "src/main.ts",
             "server": "src/main.server.ts",
             "ssr": {
-              "entry": "src/server.ts"
+              "entry": "src/server/main.ts"
             },
             "prerender": false,
             "tsConfig": "tsconfig.app.json",

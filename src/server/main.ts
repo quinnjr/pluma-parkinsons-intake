@@ -10,23 +10,23 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { createId } from '@paralleldrive/cuid2';
-import bootstrap from './main.server.js';
-import { PrismaClient } from './prisma/client.js';
-import { validateAndSanitize } from '../server/anonymize.js';
-import { cryptoFromEnv } from '../server/crypto.js';
-import { adminRouter, makeLoadAuth } from '../server/admin-routes.js';
-import { requireRole } from '../server/auth.js';
-import { audit } from '../server/audit.js';
-import { seedSuperfundIfEmpty } from '../server/superfund-importer.js';
-import { nearbySites } from '../server/superfund-proximity.js';
+import bootstrap from '../main.server.js';
+import { PrismaClient } from '../prisma/client.js';
+import { validateAndSanitize } from './anonymize.js';
+import { cryptoFromEnv } from './crypto.js';
+import { adminRouter, makeLoadAuth } from './admin-routes.js';
+import { requireRole } from './auth.js';
+import { audit } from './audit.js';
+import { seedSuperfundIfEmpty } from './superfund-importer.js';
+import { nearbySites } from './superfund-proximity.js';
 import {
   buildHistoricalMarkdown,
   buildHistoricalSection,
   buildProximityMarkdown,
   buildProximitySection,
   type HistoricalStateEntry,
-} from '../server/superfund-emission.js';
-import { US_STATE_NAMES } from './app/shared/us-states.js';
+} from './superfund-emission.js';
+import { US_STATE_NAMES } from '../app/shared/us-states.js';
 
 const serverDistFolder = path.dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = path.resolve(serverDistFolder, '../browser');

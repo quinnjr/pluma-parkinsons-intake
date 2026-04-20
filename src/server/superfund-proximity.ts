@@ -1,4 +1,4 @@
-import type { PrismaClient, SuperfundSite } from '../src/prisma/client.js';
+import type { PrismaClient, SuperfundSite } from '../prisma/client.js';
 
 const EARTH_RADIUS_MILES = 3958.7613;
 export const PROXIMITY_MILES = 10;

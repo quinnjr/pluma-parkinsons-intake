@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'csv-parse/sync';
-import type { PrismaClient, SuperfundSite, ZipCentroid } from '../src/prisma/client.js';
+import type { PrismaClient, SuperfundSite, ZipCentroid } from '../prisma/client.js';
 
 export type SuperfundRow = Omit<SuperfundSite, 'id' | 'createdAt' | 'updatedAt'>;
 export type ZipCentroidRow = ZipCentroid;

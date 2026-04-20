@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { PrismaClient } from '../src/prisma/client.js';
-import { seedSuperfundForce } from '../server/superfund-importer.js';
+import { seedSuperfundForce } from '../src/server/superfund-importer.js';
 
 async function main() {
   const databaseUrl = process.env['DATABASE_URL'] ?? 'file:./dev.db';

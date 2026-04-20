@@ -1,4 +1,4 @@
-import type { SuperfundSite } from '../src/prisma/client.js';
+import type { SuperfundSite } from '../prisma/client.js';
 
 export type ProximitySiteRef = Pick<
   SuperfundSite,
