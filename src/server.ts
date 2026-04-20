@@ -17,6 +17,7 @@ import { cryptoFromEnv } from '../server/crypto.js';
 import { adminRouter, makeLoadAuth } from '../server/admin-routes.js';
 import { requireRole } from '../server/auth.js';
 import { audit } from '../server/audit.js';
+import { seedSuperfundIfEmpty } from '../server/superfund-importer.js';
 
 const serverDistFolder = path.dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = path.resolve(serverDistFolder, '../browser');
@@ -28,6 +29,14 @@ const indexHtmlTemplate = readFileSync(
 const databaseUrl = process.env['DATABASE_URL'] ?? 'file:./dev.db';
 const adapter = new PrismaBetterSqlite3({ url: databaseUrl });
 const prisma = new PrismaClient({ adapter });
+
+// Kick off async Superfund/ZIP reference-data seeding on boot. Non-blocking —
+// the app starts immediately; seeding logs progress. Endpoints that query
+// these tables handle the "still seeding" window by returning an empty list.
+void seedSuperfundIfEmpty(prisma).catch((err) => {
+  console.error('[superfund] auto-seed failed:', err);
+});
+
 const crypto = cryptoFromEnv();
 
 const PERMISSIONS_POLICY = [

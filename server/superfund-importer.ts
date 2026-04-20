@@ -113,12 +113,14 @@ async function upsertSuperfundSites(
   const rowIds = new Set(rows.map((r) => r.epaId));
 
   // Fresh DB: single createMany is dramatically faster than per-row upserts.
+  // NB: Prisma 7's SQLite adapter dropped the `skipDuplicates` option, so we
+  // rely on the empty-table precondition + unique constraints to guarantee no
+  // collisions on this path.
   if (existingIds.size === 0) {
     const chunkSize = 1000;
     for (let i = 0; i < rows.length; i += chunkSize) {
       await prisma.superfundSite.createMany({
         data: rows.slice(i, i + chunkSize),
-        skipDuplicates: true,
       });
     }
     return { inserted: rows.length, updated: 0, orphans: 0 };
@@ -170,12 +172,14 @@ async function upsertZipCentroids(
   const existingIds = new Set(existingZips.map((z) => z.zipCode));
 
   // Fresh DB: single createMany is ~100x faster than 33k upserts on cold WAL SQLite.
+  // NB: Prisma 7's SQLite adapter dropped the `skipDuplicates` option, so we
+  // rely on the empty-table precondition + unique constraints to guarantee no
+  // collisions on this path.
   if (existingIds.size === 0) {
     const chunkSize = 1000;
     for (let i = 0; i < rows.length; i += chunkSize) {
       await prisma.zipCentroid.createMany({
         data: rows.slice(i, i + chunkSize),
-        skipDuplicates: true,
       });
     }
     return { inserted: rows.length, updated: 0, orphans: 0 };
