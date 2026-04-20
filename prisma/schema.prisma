@@ -184,8 +184,11 @@ model SuperfundSite {
 // U.S. Census 2020 ZCTA Gazetteer snapshot. Public reference data;
 // used for ZIP-centroid distance computation against SuperfundSite.
 model ZipCentroid {
-  zipCode   String @id
+  zipCode   String  @id
   latitude  Float
   longitude Float
-  state     String
+  // Nullable because ~1,890 rows in the scpike community ZCTA crosswalk lack a
+  // STATE_USPS — territorial ZCTAs (PR, VI, etc.) the crosswalk doesn't cover.
+  // The proximity helper matches on latitude/longitude; `state` is informational.
+  state     String?
 }
