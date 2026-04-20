@@ -96,7 +96,39 @@
           "defaultConfiguration": "development"
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "buildTarget": "pluma-parkinsons-intake:build:development",
+            "runner": "vitest",
+            "include": ["src/**/*.spec.ts"],
+            "coverageInclude": [
+              "src/server/**/*.ts",
+              "src/app/shared/api-client.ts",
+              "src/app/shared/api-errors.ts",
+              "src/app/shared/auth.guard.ts",
+              "src/app/shared/auth.service.ts",
+              "src/app/shared/superfund.service.ts",
+              "src/app/shared/validation.ts",
+              "src/app/shared/webauthn.service.ts",
+              "src/app/shared/us-states.ts",
+              "src/app/risk/risk.service.ts",
+              "src/app/risk/submission-api.service.ts"
+            ],
+            "coverageExclude": [
+              "src/**/*.spec.ts",
+              "src/**/*.d.ts",
+              "src/server/express-augmentation.d.ts",
+              "src/server/main.ts",
+              "src/server/mailer.ts"
+            ],
+            "coverageReporters": ["text", "text-summary", "html"],
+            "coverageThresholds": {
+              "lines": 90,
+              "functions": 90,
+              "branches": 85,
+              "statements": 90
+            }
+          }
         }
       }
     }
