@@ -1,16 +1,27 @@
+export interface ProximitySiteRef {
+  epaId: string;
+  name: string;
+  city: string | null;
+  county: string | null;
+  state: string;
+  status: string;
+  contaminants: string | null;
+  distanceMiles: number;
+}
+
+export interface HistoricalSiteRef {
+  epaId: string;
+  name: string;
+  city: string | null;
+  county: string | null;
+  status: string;
+  contaminants: string | null;
+}
+
 export interface ProximityInput {
   zipCode: string;
   zipCentroidFound: boolean;
-  sites: {
-    epaId: string;
-    name: string;
-    city: string | null;
-    county: string | null;
-    state: string;
-    status: string;
-    contaminants: string | null;
-    distanceMiles: number;
-  }[];
+  sites: ProximitySiteRef[];
 }
 
 export interface ProximitySection {
@@ -25,32 +36,11 @@ export interface ProximitySection {
   }[];
 }
 
-export interface HistoricalStateInput {
+export interface HistoricalStateEntry {
   state: string;
   stateName: string;
   livedYears: number | null;
-  sites: {
-    epaId: string;
-    name: string;
-    city: string | null;
-    county: string | null;
-    status: string;
-    contaminants: string | null;
-  }[];
-}
-
-export interface HistoricalSectionEntry {
-  state: string;
-  stateName: string;
-  livedYears: number | null;
-  sites: {
-    epaId: string;
-    name: string;
-    city: string | null;
-    county: string | null;
-    status: string;
-    contaminants: string | null;
-  }[];
+  sites: HistoricalSiteRef[];
 }
 
 function formatMeta(status: string, contaminants: string | null): string {
@@ -90,7 +80,7 @@ export function buildProximitySection(input: ProximityInput): ProximitySection {
   };
 }
 
-export function buildHistoricalMarkdown(states: HistoricalStateInput[]): string {
+export function buildHistoricalMarkdown(states: HistoricalStateEntry[]): string {
   const populated = states.filter((s) => s.sites.length > 0);
   if (populated.length === 0) return '';
 
@@ -110,20 +100,6 @@ export function buildHistoricalMarkdown(states: HistoricalStateInput[]): string 
   return lines.join('\n');
 }
 
-export function buildHistoricalSection(states: HistoricalStateInput[]): HistoricalSectionEntry[] {
-  return states
-    .filter((s) => s.sites.length > 0)
-    .map((s) => ({
-      state: s.state,
-      stateName: s.stateName,
-      livedYears: s.livedYears,
-      sites: s.sites.map((site) => ({
-        epaId: site.epaId,
-        name: site.name,
-        city: site.city,
-        county: site.county,
-        status: site.status,
-        contaminants: site.contaminants,
-      })),
-    }));
+export function buildHistoricalSection(states: HistoricalStateEntry[]): HistoricalStateEntry[] {
+  return states.filter((s) => s.sites.length > 0);
 }

@@ -2,6 +2,7 @@ import type { PrismaClient } from './generated/prisma/client.js';
 
 const EARTH_RADIUS_MILES = 3958.7613;
 export const PROXIMITY_MILES = 10;
+const BBOX_SLACK_MILES = 5;
 
 export interface NearbySite {
   id: string;
@@ -13,6 +14,11 @@ export interface NearbySite {
   status: string;
   contaminants: string | null;
   distanceMiles: number;
+}
+
+export interface NearbyResult {
+  found: boolean;
+  sites: NearbySite[];
 }
 
 export function haversineMiles(
@@ -31,10 +37,9 @@ export function haversineMiles(
   return EARTH_RADIUS_MILES * c;
 }
 
-export function bboxBounds(lat: number, _lng: number, radiusMiles: number) {
-  // 1 degree of latitude ≈ 69 miles, essentially constant.
+export function bboxBounds(lat: number, radiusMiles: number) {
   const latDelta = radiusMiles / 69;
-  // 1 degree of longitude shrinks as cos(latitude). Guard against poles.
+  // cos(lat)→0 at the poles would make lngDelta infinite; clamp ≈ lat 89.43°.
   const cosLat = Math.max(Math.cos((lat * Math.PI) / 180), 0.01);
   const lngDelta = radiusMiles / (69 * cosLat);
   return { latDelta, lngDelta };
@@ -44,11 +49,11 @@ export async function nearbySites(
   prisma: PrismaClient,
   zipCode: string,
   radiusMiles: number = PROXIMITY_MILES,
-): Promise<NearbySite[]> {
+): Promise<NearbyResult> {
   const centroid = await prisma.zipCentroid.findUnique({ where: { zipCode } });
-  if (!centroid) return [];
+  if (!centroid) return { found: false, sites: [] };
 
-  const { latDelta, lngDelta } = bboxBounds(centroid.latitude, centroid.longitude, radiusMiles + 5);
+  const { latDelta, lngDelta } = bboxBounds(centroid.latitude, radiusMiles + BBOX_SLACK_MILES);
   const candidates = await prisma.superfundSite.findMany({
     where: {
       latitude: { gte: centroid.latitude - latDelta, lte: centroid.latitude + latDelta },
@@ -68,7 +73,7 @@ export async function nearbySites(
     },
   });
 
-  const within = candidates
+  const sites = candidates
     .map((s) => ({
       id: s.id,
       epaId: s.epaId,
@@ -81,7 +86,7 @@ export async function nearbySites(
       distanceMiles: haversineMiles(centroid.latitude, centroid.longitude, s.latitude, s.longitude),
     }))
     .filter((s) => s.distanceMiles <= radiusMiles);
-  within.sort((a, b) => a.distanceMiles - b.distanceMiles);
+  sites.sort((a, b) => a.distanceMiles - b.distanceMiles);
 
-  return within;
+  return { found: true, sites };
 }

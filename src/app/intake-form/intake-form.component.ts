@@ -27,7 +27,8 @@ import {
 } from '../icons';
 import { EMPTY_INTAKE, EnvironmentalExposure, IntakeForm, IntakePayload } from '../risk/risk.model';
 import { IntakePayloadService } from '../risk/risk.service';
-import { SuperfundService, type SuperfundStateInfo } from '../shared/superfund.service';
+import { SuperfundService } from '../shared/superfund.service';
+import { US_STATE_NAMES } from '../shared/us-states';
 import { StateResidencyComponent } from './state-residency/state-residency.component';
 import { SubmissionReviewComponent } from '../submission-review/submission-review.component';
 
@@ -117,22 +118,6 @@ const SUPERFUND_OPTS: readonly Option[] = [
   { v: 'unknown', l: 'Not sure' },
 ];
 
-const STATE_NAMES: Record<string, string> = {
-  AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California',
-  CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware', DC: 'District of Columbia',
-  FL: 'Florida', GA: 'Georgia', HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois',
-  IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana',
-  ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota',
-  MS: 'Mississippi', MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada',
-  NH: 'New Hampshire', NJ: 'New Jersey', NM: 'New Mexico', NY: 'New York',
-  NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma', OR: 'Oregon',
-  PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina', SD: 'South Dakota',
-  TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia',
-  WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
-  PR: 'Puerto Rico', GU: 'Guam', VI: 'U.S. Virgin Islands',
-  AS: 'American Samoa', MP: 'Northern Mariana Islands',
-};
-
 @Component({
   selector: 'app-intake-form',
   standalone: true,
@@ -145,7 +130,7 @@ export class IntakeFormComponent {
   private router = inject(Router);
   private superfund = inject(SuperfundService);
 
-  superfundStates = signal<SuperfundStateInfo[]>([]);
+  readonly superfundStates = computed(() => this.superfund.states() ?? []);
 
   readonly authReady = this.auth.ready;
   readonly currentUser = this.auth.user;
@@ -162,9 +147,8 @@ export class IntakeFormComponent {
     afterNextRender(() => {
       if (!this.auth.ready()) void this.auth.loadMe();
     });
-    afterNextRender(async () => {
-      await this.superfund.loadStates();
-      this.superfundStates.set(this.superfund.states() ?? []);
+    afterNextRender(() => {
+      void this.superfund.loadStates();
     });
   }
 
@@ -313,7 +297,7 @@ export class IntakeFormComponent {
   }
 
   stateNameFor(code: string): string {
-    return STATE_NAMES[code] ?? code;
+    return US_STATE_NAMES[code] ?? code;
   }
 
   isStateSelected(code: string): boolean {

@@ -23,13 +23,13 @@ describe('haversineMiles', () => {
 
 describe('bboxBounds', () => {
   it('widens longitude delta at high latitude', () => {
-    const a = bboxBounds(0, 0, 10);
-    const b = bboxBounds(60, 0, 10);
+    const a = bboxBounds(0, 10);
+    const b = bboxBounds(60, 10);
     expect(b.lngDelta).toBeGreaterThan(a.lngDelta);
   });
 
   it('encloses the radius in both axes', () => {
-    const { latDelta, lngDelta } = bboxBounds(40, -74, 10);
+    const { latDelta, lngDelta } = bboxBounds(40, 10);
     expect(latDelta).toBeGreaterThan(0.14);
     expect(latDelta).toBeLessThan(0.16);
     expect(lngDelta).toBeGreaterThan(0.18);

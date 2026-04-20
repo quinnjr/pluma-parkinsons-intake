@@ -24,8 +24,9 @@ import {
   buildHistoricalSection,
   buildProximityMarkdown,
   buildProximitySection,
-  type HistoricalStateInput,
+  type HistoricalStateEntry,
 } from '../server/superfund-emission.js';
+import { US_STATE_NAMES } from './app/shared/us-states.js';
 
 const serverDistFolder = path.dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = path.resolve(serverDistFolder, '../browser');
@@ -46,22 +47,6 @@ void seedSuperfundIfEmpty(prisma).catch((err) => {
 });
 
 const crypto = cryptoFromEnv();
-
-const US_STATE_NAMES: Record<string, string> = {
-  AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California',
-  CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware', DC: 'District of Columbia',
-  FL: 'Florida', GA: 'Georgia', HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois',
-  IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana',
-  ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota',
-  MS: 'Mississippi', MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada',
-  NH: 'New Hampshire', NJ: 'New Jersey', NM: 'New Mexico', NY: 'New York',
-  NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma', OR: 'Oregon',
-  PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina', SD: 'South Dakota',
-  TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia',
-  WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
-  PR: 'Puerto Rico', GU: 'Guam', VI: 'U.S. Virgin Islands',
-  AS: 'American Samoa', MP: 'Northern Mariana Islands',
-};
 
 const PERMISSIONS_POLICY = [
   'accelerometer=()',
@@ -192,40 +177,34 @@ app.post('/api/submissions', requireRole('patient'), async (req, res) => {
   }
   const s = result.sanitized;
 
-  // Current-proximity block (10 mi from ZIP centroid).
+  const allSiteIds = s.livedInStates.flatMap((st) => st.nearSiteIds);
+  const [proximity, historicalSiteRows] = await Promise.all([
+    s.zipCode ? nearbySites(prisma, s.zipCode.slice(0, 5)) : null,
+    allSiteIds.length > 0
+      ? prisma.superfundSite.findMany({
+          where: { id: { in: allSiteIds } },
+          select: {
+            id: true, epaId: true, name: true, city: true, county: true,
+            status: true, contaminants: true,
+          },
+        })
+      : [],
+  ]);
+
   let proximityMarkdown = '';
   let proximitySection: ReturnType<typeof buildProximitySection> | null = null;
-  if (s.zipCode) {
-    const sites = await nearbySites(prisma, s.zipCode.slice(0, 5));
-    const centroid = await prisma.zipCentroid.findUnique({
-      where: { zipCode: s.zipCode.slice(0, 5) },
-      select: { zipCode: true },
-    });
-    proximityMarkdown = buildProximityMarkdown({
+  if (s.zipCode && proximity) {
+    const input = {
       zipCode: s.zipCode,
-      zipCentroidFound: centroid !== null,
-      sites,
-    });
-    proximitySection = buildProximitySection({
-      zipCode: s.zipCode,
-      zipCentroidFound: centroid !== null,
-      sites,
-    });
+      zipCentroidFound: proximity.found,
+      sites: proximity.sites,
+    };
+    proximityMarkdown = buildProximityMarkdown(input);
+    proximitySection = buildProximitySection(input);
   }
 
-  // Historical residency block.
-  const allSiteIds = s.livedInStates.flatMap((st) => st.nearSiteIds);
-  const historicalSiteRows = allSiteIds.length > 0
-    ? await prisma.superfundSite.findMany({
-        where: { id: { in: allSiteIds } },
-        select: {
-          id: true, epaId: true, name: true, city: true, county: true,
-          status: true, contaminants: true,
-        },
-      })
-    : [];
   const byId = new Map(historicalSiteRows.map((row) => [row.id, row]));
-  const historicalInput: HistoricalStateInput[] = s.livedInStates.map((st) => ({
+  const historicalInput: HistoricalStateEntry[] = s.livedInStates.map((st) => ({
     state: st.state,
     stateName: US_STATE_NAMES[st.state] ?? st.state,
     livedYears: st.livedYears,
