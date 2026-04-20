@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
-import { parse } from 'csv-parse/sync';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parse } from 'csv-parse/sync';
 import type { PrismaClient } from './generated/prisma/client.js';
 
 export interface SuperfundRow {
@@ -101,7 +101,6 @@ export function parseZipCentroidCsv(csv: string): ZipCentroidRow[] {
 interface SeedSummary {
   inserted: number;
   updated: number;
-  unchanged: number;
   orphans: number;
 }
 
@@ -111,35 +110,56 @@ async function upsertSuperfundSites(
 ): Promise<SeedSummary> {
   const existingSites = await prisma.superfundSite.findMany({ select: { epaId: true } });
   const existingIds = new Set(existingSites.map((s) => s.epaId));
-  let inserted = 0;
-  let updated = 0;
   const rowIds = new Set(rows.map((r) => r.epaId));
 
-  for (const row of rows) {
-    const res = await prisma.superfundSite.upsert({
-      where: { epaId: row.epaId },
-      update: {
-        name: row.name,
-        city: row.city,
-        county: row.county,
-        state: row.state,
-        zipCode: row.zipCode,
-        latitude: row.latitude,
-        longitude: row.longitude,
-        status: row.status,
-        listedOn: row.listedOn,
-        deletedOn: row.deletedOn,
-        contaminants: row.contaminants,
-        epaUrl: row.epaUrl,
-      },
-      create: row,
-    });
-    if (existingIds.has(res.epaId)) updated++;
-    else inserted++;
+  // Fresh DB: single createMany is dramatically faster than per-row upserts.
+  if (existingIds.size === 0) {
+    const chunkSize = 1000;
+    for (let i = 0; i < rows.length; i += chunkSize) {
+      await prisma.superfundSite.createMany({
+        data: rows.slice(i, i + chunkSize),
+        skipDuplicates: true,
+      });
+    }
+    return { inserted: rows.length, updated: 0, orphans: 0 };
+  }
+
+  // Re-seed: real upsert path, batched in transactions to amortize fsync cost.
+  let inserted = 0;
+  let updated = 0;
+  const chunkSize = 200;
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    const chunk = rows.slice(i, i + chunkSize);
+    await prisma.$transaction(
+      chunk.map((row) =>
+        prisma.superfundSite.upsert({
+          where: { epaId: row.epaId },
+          update: {
+            name: row.name,
+            city: row.city,
+            county: row.county,
+            state: row.state,
+            zipCode: row.zipCode,
+            latitude: row.latitude,
+            longitude: row.longitude,
+            status: row.status,
+            listedOn: row.listedOn,
+            deletedOn: row.deletedOn,
+            contaminants: row.contaminants,
+            epaUrl: row.epaUrl,
+          },
+          create: row,
+        }),
+      ),
+    );
+    for (const row of chunk) {
+      if (existingIds.has(row.epaId)) updated++;
+      else inserted++;
+    }
   }
 
   const orphans = [...existingIds].filter((id) => !rowIds.has(id)).length;
-  return { inserted, updated, unchanged: 0, orphans };
+  return { inserted, updated, orphans };
 }
 
 async function upsertZipCentroids(
@@ -148,18 +168,35 @@ async function upsertZipCentroids(
 ): Promise<SeedSummary> {
   const existingZips = await prisma.zipCentroid.findMany({ select: { zipCode: true } });
   const existingIds = new Set(existingZips.map((z) => z.zipCode));
+
+  // Fresh DB: single createMany is ~100x faster than 33k upserts on cold WAL SQLite.
+  if (existingIds.size === 0) {
+    const chunkSize = 1000;
+    for (let i = 0; i < rows.length; i += chunkSize) {
+      await prisma.zipCentroid.createMany({
+        data: rows.slice(i, i + chunkSize),
+        skipDuplicates: true,
+      });
+    }
+    return { inserted: rows.length, updated: 0, orphans: 0 };
+  }
+
+  // Re-seed: real upsert path, batched in transactions to amortize fsync cost.
   let inserted = 0;
   let updated = 0;
-
-  const chunkSize = 500;
+  const chunkSize = 200;
   for (let i = 0; i < rows.length; i += chunkSize) {
     const chunk = rows.slice(i, i + chunkSize);
+    await prisma.$transaction(
+      chunk.map((row) =>
+        prisma.zipCentroid.upsert({
+          where: { zipCode: row.zipCode },
+          update: { latitude: row.latitude, longitude: row.longitude, state: row.state },
+          create: row,
+        }),
+      ),
+    );
     for (const row of chunk) {
-      await prisma.zipCentroid.upsert({
-        where: { zipCode: row.zipCode },
-        update: { latitude: row.latitude, longitude: row.longitude, state: row.state },
-        create: row,
-      });
       if (existingIds.has(row.zipCode)) updated++;
       else inserted++;
     }
@@ -167,7 +204,7 @@ async function upsertZipCentroids(
 
   const rowIds = new Set(rows.map((r) => r.zipCode));
   const orphans = [...existingIds].filter((id) => !rowIds.has(id)).length;
-  return { inserted, updated, unchanged: 0, orphans };
+  return { inserted, updated, orphans };
 }
 
 function dataPath(filename: string): string {
