@@ -18,6 +18,14 @@ import { adminRouter, makeLoadAuth } from '../server/admin-routes.js';
 import { requireRole } from '../server/auth.js';
 import { audit } from '../server/audit.js';
 import { seedSuperfundIfEmpty } from '../server/superfund-importer.js';
+import { nearbySites } from '../server/superfund-proximity.js';
+import {
+  buildHistoricalMarkdown,
+  buildHistoricalSection,
+  buildProximityMarkdown,
+  buildProximitySection,
+  type HistoricalStateInput,
+} from '../server/superfund-emission.js';
 
 const serverDistFolder = path.dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = path.resolve(serverDistFolder, '../browser');
@@ -38,6 +46,22 @@ void seedSuperfundIfEmpty(prisma).catch((err) => {
 });
 
 const crypto = cryptoFromEnv();
+
+const US_STATE_NAMES: Record<string, string> = {
+  AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California',
+  CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware', DC: 'District of Columbia',
+  FL: 'Florida', GA: 'Georgia', HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois',
+  IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana',
+  ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota',
+  MS: 'Mississippi', MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada',
+  NH: 'New Hampshire', NJ: 'New Jersey', NM: 'New Mexico', NY: 'New York',
+  NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma', OR: 'Oregon',
+  PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina', SD: 'South Dakota',
+  TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia',
+  WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
+  PR: 'Puerto Rico', GU: 'Guam', VI: 'U.S. Virgin Islands',
+  AS: 'American Samoa', MP: 'Northern Mariana Islands',
+};
 
 const PERMISSIONS_POLICY = [
   'accelerometer=()',
@@ -167,6 +191,74 @@ app.post('/api/submissions', requireRole('patient'), async (req, res) => {
     return;
   }
   const s = result.sanitized;
+
+  // Current-proximity block (10 mi from ZIP centroid).
+  let proximityMarkdown = '';
+  let proximitySection: ReturnType<typeof buildProximitySection> | null = null;
+  if (s.zipCode) {
+    const sites = await nearbySites(prisma, s.zipCode.slice(0, 5));
+    const centroid = await prisma.zipCentroid.findUnique({
+      where: { zipCode: s.zipCode.slice(0, 5) },
+      select: { zipCode: true },
+    });
+    proximityMarkdown = buildProximityMarkdown({
+      zipCode: s.zipCode,
+      zipCentroidFound: centroid !== null,
+      sites,
+    });
+    proximitySection = buildProximitySection({
+      zipCode: s.zipCode,
+      zipCentroidFound: centroid !== null,
+      sites,
+    });
+  }
+
+  // Historical residency block.
+  const allSiteIds = s.livedInStates.flatMap((st) => st.nearSiteIds);
+  const historicalSiteRows = allSiteIds.length > 0
+    ? await prisma.superfundSite.findMany({
+        where: { id: { in: allSiteIds } },
+        select: {
+          id: true, epaId: true, name: true, city: true, county: true,
+          status: true, contaminants: true,
+        },
+      })
+    : [];
+  const byId = new Map(historicalSiteRows.map((row) => [row.id, row]));
+  const historicalInput: HistoricalStateInput[] = s.livedInStates.map((st) => ({
+    state: st.state,
+    stateName: US_STATE_NAMES[st.state] ?? st.state,
+    livedYears: st.livedYears,
+    sites: st.nearSiteIds
+      .map((id) => byId.get(id))
+      .filter((r): r is NonNullable<typeof r> => r !== undefined)
+      .map((r) => ({
+        epaId: r.epaId,
+        name: r.name,
+        city: r.city,
+        county: r.county,
+        status: r.status,
+        contaminants: r.contaminants,
+      })),
+  }));
+  const historicalMarkdown = buildHistoricalMarkdown(historicalInput);
+  const historicalSection = buildHistoricalSection(historicalInput);
+
+  const extraMarkdownChunks = [proximityMarkdown, historicalMarkdown].filter(Boolean);
+  const markdown = extraMarkdownChunks.length > 0
+    ? `${s.markdown}\n\n${extraMarkdownChunks.join('\n\n')}`
+    : s.markdown;
+
+  const sections = [
+    ...s.sections,
+    ...(proximitySection
+      ? [{ id: 'environmental.superfundProximity.auto', data: proximitySection }]
+      : []),
+    ...(historicalSection.length > 0
+      ? [{ id: 'environmental.superfundHistorical', data: historicalSection }]
+      : []),
+  ];
+
   const created = await prisma.submission.create({
     data: {
       lookupCode: createId(),
@@ -174,8 +266,8 @@ app.post('/api/submissions', requireRole('patient'), async (req, res) => {
       ageBand: s.ageBand,
       sexAtBirth: s.sexAtBirth,
       zipCodeEnc: s.zipCode ? crypto.encrypt(s.zipCode) : null,
-      markdownEnc: crypto.encrypt(s.markdown),
-      sectionsEnc: crypto.encrypt(JSON.stringify(s.sections)),
+      markdownEnc: crypto.encrypt(markdown),
+      sectionsEnc: crypto.encrypt(JSON.stringify(sections)),
       owner: { connect: { id: req.auth!.sub } },
     },
     select: { id: true, lookupCode: true, createdAt: true },
