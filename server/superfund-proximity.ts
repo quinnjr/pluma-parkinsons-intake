@@ -1,20 +1,13 @@
-import type { PrismaClient } from './generated/prisma/client.js';
+import type { PrismaClient, SuperfundSite } from '../src/prisma/client.js';
 
 const EARTH_RADIUS_MILES = 3958.7613;
 export const PROXIMITY_MILES = 10;
 const BBOX_SLACK_MILES = 5;
 
-export interface NearbySite {
-  id: string;
-  epaId: string;
-  name: string;
-  city: string | null;
-  county: string | null;
-  state: string;
-  status: string;
-  contaminants: string | null;
-  distanceMiles: number;
-}
+export type NearbySite = Pick<
+  SuperfundSite,
+  'id' | 'epaId' | 'name' | 'city' | 'county' | 'state' | 'status' | 'contaminants'
+> & { distanceMiles: number };
 
 export interface NearbyResult {
   found: boolean;

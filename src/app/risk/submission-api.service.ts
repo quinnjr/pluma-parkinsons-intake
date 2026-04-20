@@ -1,7 +1,6 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
-import { AnonymizedPayload, StateResidency } from './risk.model';
+import { ApiClient } from '../shared/api-client';
+import { AnonymizedPayload } from './risk.model';
 
 export interface SubmissionCreated {
   ok: true;
@@ -17,15 +16,9 @@ export interface SubmissionError {
 
 @Injectable({ providedIn: 'root' })
 export class SubmissionApiService {
-  private http = inject(HttpClient);
+  private api = inject(ApiClient);
 
-  async create(
-    payload: AnonymizedPayload,
-    livedInStates: StateResidency[] = [],
-  ): Promise<SubmissionCreated | SubmissionError> {
-    const body = { ...payload, livedInStates };
-    return firstValueFrom(
-      this.http.post<SubmissionCreated | SubmissionError>('/api/submissions', body),
-    );
+  create(payload: AnonymizedPayload): Promise<SubmissionCreated | SubmissionError> {
+    return this.api.post<SubmissionCreated | SubmissionError>('/api/submissions', payload);
   }
 }

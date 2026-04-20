@@ -2,30 +2,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'csv-parse/sync';
-import type { PrismaClient } from './generated/prisma/client.js';
+import type { PrismaClient, SuperfundSite, ZipCentroid } from '../src/prisma/client.js';
 
-export interface SuperfundRow {
-  epaId: string;
-  name: string;
-  city: string | null;
-  county: string | null;
-  state: string;
-  zipCode: string | null;
-  latitude: number;
-  longitude: number;
-  status: string;
-  listedOn: Date | null;
-  deletedOn: Date | null;
-  contaminants: string | null;
-  epaUrl: string | null;
-}
-
-export interface ZipCentroidRow {
-  zipCode: string;
-  latitude: number;
-  longitude: number;
-  state: string | null; // NOTE: nullable — matches Prisma schema, empty CSV value → null
-}
+export type SuperfundRow = Omit<SuperfundSite, 'id' | 'createdAt' | 'updatedAt'>;
+export type ZipCentroidRow = ZipCentroid;
 
 const VALID_STATUSES = new Set(['final', 'proposed', 'deleted', 'partial-deletion']);
 

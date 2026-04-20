@@ -1,22 +1,14 @@
-export interface ProximitySiteRef {
-  epaId: string;
-  name: string;
-  city: string | null;
-  county: string | null;
-  state: string;
-  status: string;
-  contaminants: string | null;
-  distanceMiles: number;
-}
+import type { SuperfundSite } from '../src/prisma/client.js';
 
-export interface HistoricalSiteRef {
-  epaId: string;
-  name: string;
-  city: string | null;
-  county: string | null;
-  status: string;
-  contaminants: string | null;
-}
+export type ProximitySiteRef = Pick<
+  SuperfundSite,
+  'epaId' | 'name' | 'city' | 'county' | 'state' | 'status' | 'contaminants'
+> & { distanceMiles: number };
+
+export type HistoricalSiteRef = Pick<
+  SuperfundSite,
+  'epaId' | 'name' | 'city' | 'county' | 'status' | 'contaminants'
+>;
 
 export interface ProximityInput {
   zipCode: string;
@@ -27,13 +19,10 @@ export interface ProximityInput {
 export interface ProximitySection {
   zipCode: string;
   zipCentroidFound: boolean;
-  sitesWithin10Mi: {
-    epaId: string;
-    name: string;
-    distanceMiles: number;
-    status: string;
-    contaminants: string | null;
-  }[];
+  sitesWithin10Mi: Pick<
+    ProximitySiteRef,
+    'epaId' | 'name' | 'distanceMiles' | 'status' | 'contaminants'
+  >[];
 }
 
 export interface HistoricalStateEntry {

@@ -134,6 +134,7 @@ export interface IntakePayload {
   generatedAt: string;
   patient: IntakeForm['contact'];
   sections: IntakeSection[];
+  livedInStates: StateResidency[];
 }
 
 export interface AnonymizedPayload {
@@ -144,6 +145,7 @@ export interface AnonymizedPayload {
   sexAtBirth: string | null;
   markdown: string;
   sections: IntakeSection[];
+  livedInStates: StateResidency[];
 }
 
 export const EMPTY_INTAKE: IntakeForm = {
