@@ -75,4 +75,21 @@ describe('ResearchersComponent', () => {
     await p;
     expect(cmp.errorMessage()).toBe('deny');
   });
+
+  it('renders empty state, populated rows, and error banner', () => {
+    const fixture = TestBed.createComponent(ResearchersComponent);
+    fixture.detectChanges();
+    httpMock.match(() => true).forEach((r) => r.flush({ ok: true, researchers: [] }));
+    expect(fixture.nativeElement.textContent).toContain('No confirmed researchers yet');
+
+    fixture.componentInstance.entries.set([r1, r2]);
+    fixture.componentInstance.errorMessage.set('boom');
+    fixture.detectChanges();
+    const txt = fixture.nativeElement.textContent as string;
+    expect(txt).toContain('r1@x.com');
+    expect(txt).toContain('r2@x.com');
+    expect(txt).toContain('Granted');
+    expect(txt).toContain('No access');
+    expect(txt).toContain('boom');
+  });
 });

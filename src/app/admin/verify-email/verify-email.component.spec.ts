@@ -108,4 +108,13 @@ describe('VerifyEmailComponent', () => {
     await cmp.resend();
     httpMock.expectNone('/api/auth/resend-verification');
   });
+
+  it('renders the form and the error banner', () => {
+    const fixture = TestBed.createComponent(VerifyEmailComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Verify your email');
+    fixture.componentInstance.errorMessage.set('boom');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('boom');
+  });
 });

@@ -81,4 +81,27 @@ describe('ResetPasswordComponent', () => {
     await cmp.onSubmit();
     httpMock.expectNone('/api/auth/reset-password');
   });
+
+  it('renders invalid-link message when token is missing', () => {
+    setup(null);
+    const fixture = TestBed.createComponent(ResetPasswordComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Invalid link');
+  });
+
+  it('renders success message after reset', () => {
+    setup('tok');
+    const fixture = TestBed.createComponent(ResetPasswordComponent);
+    fixture.componentInstance.success.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Password reset');
+  });
+
+  it('renders the form with errors when submitted with server error', () => {
+    setup('tok');
+    const fixture = TestBed.createComponent(ResetPasswordComponent);
+    fixture.componentInstance.errorMessage.set('oops');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('oops');
+  });
 });

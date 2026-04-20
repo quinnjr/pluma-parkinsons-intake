@@ -42,4 +42,14 @@ describe('ForgotPasswordComponent', () => {
     await cmp.onSubmit();
     httpMock.expectNone('/api/auth/request-reset');
   });
+
+  it('renders the form initially and the success message after submit', () => {
+    const fixture = TestBed.createComponent(ForgotPasswordComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Reset your password');
+
+    fixture.componentInstance.submitted.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Check your email');
+  });
 });
