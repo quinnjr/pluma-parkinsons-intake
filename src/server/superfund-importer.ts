@@ -78,13 +78,13 @@ export function parseZipCentroidCsv(csv: string): ZipCentroidRow[] {
   });
 }
 
-interface SeedSummary {
+export interface SeedSummary {
   inserted: number;
   updated: number;
   orphans: number;
 }
 
-async function upsertSuperfundSites(
+export async function upsertSuperfundSites(
   prisma: PrismaClient,
   rows: SuperfundRow[],
 ): Promise<SeedSummary> {
@@ -144,7 +144,7 @@ async function upsertSuperfundSites(
   return { inserted, updated, orphans };
 }
 
-async function upsertZipCentroids(
+export async function upsertZipCentroids(
   prisma: PrismaClient,
   rows: ZipCentroidRow[],
 ): Promise<SeedSummary> {

@@ -120,7 +120,8 @@
               "src/**/*.d.ts",
               "src/server/express-augmentation.d.ts",
               "src/server/main.ts",
-              "src/server/mailer.ts"
+              "src/server/mailer.ts",
+              "src/server/test-db.ts"
             ],
             "coverageReporters": ["text", "text-summary", "html"],
             "coverageThresholds": {
