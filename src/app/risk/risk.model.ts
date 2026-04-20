@@ -11,6 +11,12 @@ export interface Demographics {
   geneticTesting: YesNoUnknown | '';
 }
 
+export interface StateResidency {
+  state: string;            // 2-letter USPS code
+  livedYears: number | null;
+  nearSiteIds: string[];    // SuperfundSite.id values
+}
+
 export interface EnvironmentalExposure {
   // Camp Lejeune (TCE / PCE / benzene / vinyl chloride contaminated drinking water 1953-1987)
   campLejeuneStationed: YesNoUnknown | '';
@@ -44,6 +50,7 @@ export interface EnvironmentalExposure {
   heavyMetalExposure: YesNoUnknown | '';
   welderManganese: YesNoUnknown | '';
   leadPipeExposure: YesNoUnknown | '';
+  livedInStates: StateResidency[];
 }
 
 export interface LifestyleAndMedical {
@@ -171,6 +178,7 @@ export const EMPTY_INTAKE: IntakeForm = {
     heavyMetalExposure: '',
     welderManganese: '',
     leadPipeExposure: '',
+    livedInStates: [],
   },
   lifestyle: {
     headInjuryLossOfConsciousness: '',
