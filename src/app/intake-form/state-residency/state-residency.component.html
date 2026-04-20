@@ -1,0 +1,67 @@
+<fieldset class="rounded border border-slate-300 p-4">
+  <legend class="px-2 text-sm font-semibold">
+    {{ stateName() }}
+    <button type="button" class="ml-2 text-xs text-red-600 underline" (click)="removed.emit()">
+      remove
+    </button>
+  </legend>
+
+  <label class="mt-2 block text-sm">
+    About how many years total?
+    <input
+      type="number"
+      min="0"
+      max="120"
+      class="mt-1 block w-32 rounded border px-2 py-1"
+      [ngModel]="livedYears()"
+      (ngModelChange)="livedYears.set($event)"
+      name="livedYears-{{ state() }}"
+    />
+  </label>
+
+  <label class="mt-4 block text-sm font-medium">
+    Search sites in {{ stateName() }}
+    <input
+      type="search"
+      class="mt-1 block w-full rounded border px-2 py-1"
+      [ngModel]="search()"
+      (ngModelChange)="search.set($event)"
+      name="search-{{ state() }}"
+      placeholder="site name, city, or county"
+    />
+  </label>
+
+  <p class="mt-2 text-xs text-slate-600">
+    {{ checkedCount() }} of {{ sites().length }} sites selected
+  </p>
+
+  <div class="mt-2 max-h-80 overflow-y-auto rounded border border-slate-200">
+    @if (sites().length === 0) {
+      <p class="p-2 text-sm text-slate-500">Loading sites…</p>
+    } @else {
+      @for (site of filteredSites(); track site.id) {
+        <label class="flex items-start gap-2 border-b border-slate-100 p-2 text-sm last:border-b-0">
+          <input
+            type="checkbox"
+            class="mt-1"
+            [checked]="isChecked(site.id)"
+            (change)="toggleSite(site.id, $any($event.target).checked)"
+          />
+          <span>
+            <span class="font-medium">{{ site.name }}</span>
+            @if (site.city || site.county) {
+              <span class="text-slate-600">
+                — {{ site.city }}@if (site.city && site.county) {, }{{ site.county }}
+              </span>
+            }
+            @if (site.status === 'deleted') {
+              <span class="ml-1 rounded bg-slate-200 px-1 text-xs">delisted</span>
+            } @else if (site.status === 'proposed') {
+              <span class="ml-1 rounded bg-amber-200 px-1 text-xs">proposed</span>
+            }
+          </span>
+        </label>
+      }
+    }
+  </div>
+</fieldset>
