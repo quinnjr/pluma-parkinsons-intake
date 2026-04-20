@@ -27,6 +27,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "**/*.csv",
+                "input": "prisma/data",
+                "output": "prisma/data"
               }
             ],
             "styles": [

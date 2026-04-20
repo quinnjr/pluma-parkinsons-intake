@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'csv-parse/sync';
@@ -213,7 +213,18 @@ async function upsertZipCentroids(
 
 function dataPath(filename: string): string {
   const here = path.dirname(fileURLToPath(import.meta.url));
-  return path.resolve(here, '..', 'prisma', 'data', filename);
+  // Dev: server source lives at <repo>/server/, CSVs at <repo>/prisma/data/.
+  // Prod: bundled SSR entry is <repo>/dist/pluma-parkinsons-intake/server/server.mjs;
+  //   Angular's asset pipeline copies `prisma/data/*.csv` into the browser output
+  //   at <repo>/dist/pluma-parkinsons-intake/browser/prisma/data/.
+  const candidates = [
+    path.resolve(here, '..', 'prisma', 'data', filename),
+    path.resolve(here, '..', 'browser', 'prisma', 'data', filename),
+  ];
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate;
+  }
+  return candidates[0]; // let readFileSync throw with the dev path in the error
 }
 
 function loadCsvs(): { sites: SuperfundRow[]; zips: ZipCentroidRow[] } {
