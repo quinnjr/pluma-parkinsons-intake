@@ -46,7 +46,7 @@
     "helmet": "^8.1.0",
     "jose": "^6.2.2",
     "otpauth": "^9.5.0",
-    "postcss": "^8.5.10",
+    "postcss": "^8.5.18",
     "rxjs": "~7.8.0",
     "tailwindcss": "^4.2.2",
     "tslib": "^2.3.0",
